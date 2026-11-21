@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.freebuff
+# case_base.json dibuat otomatis saat aplikasi pertama dijalankan (state runtime)
+data/case_base.json
