@@ -3,19 +3,72 @@
 Hanya urusan tampilan/state UI; tidak ada perhitungan similarity di sini.
 """
 
+from pathlib import Path
+
 import streamlit as st
 
 from core.case_base import LABEL_GEJALA
+
+LOGO_PATH = Path(__file__).resolve().parents[1] / "assets" / "logo.svg"
+
+
+PILIHAN_TEMA = {"Gelap": "dark", "Terang": "light"}
+
+
+def terapkan_gaya():
+    """Gaya global seperlunya: lebar konten dan sembunyikan elemen non-aplikasi."""
+    st.markdown(
+        """
+        <style>
+          .block-container { max-width: 1080px; padding-top: 2.5rem; padding-bottom: 3rem; }
+          [data-testid="stAppDeployButton"] { display: none; }
+          footer { visibility: hidden; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def sinkronkan_tema():
+    """Catat tema yang sudah terpasang dan samakan pilihan pada sesi baru."""
+    if "tema_terpasang" in st.session_state:
+        return
+    try:
+        base = st._config.get_option("theme.base")
+    except Exception:
+        base = "dark"
+    st.session_state["tema_terpasang"] = base
+    st.session_state["tema_tampilan"] = "Terang" if base == "light" else "Gelap"
+
+
+def atur_tema():
+    """Terapkan pilihan tema sidebar ke konfigurasi Streamlit.
+
+    Streamlit belum punya API publik untuk mengganti tema saat runtime, jadi
+    dipakai helper konfigurasi internal yang sesuai dengan versi yang dipin di
+    requirements.txt.
+    """
+    base = PILIHAN_TEMA.get(st.session_state.get("tema_tampilan"), "dark")
+    try:
+        st._config.set_option("theme.base", base)
+    except Exception as kesalahan:  # pragma: no cover - hanya bila API internal berubah
+        st.sidebar.warning(f"Tema tidak dapat diganti: {kesalahan}")
+
+
+def tampilkan_header(judul, deskripsi=""):
+    """Header halaman: logo di kiri, judul dan deskripsi di kanan."""
+    kolom_logo, kolom_teks = st.columns([1, 14], vertical_alignment="center")
+    with kolom_logo:
+        st.image(str(LOGO_PATH), width=48, alt="Logo Sistem Pakar WiFi")
+    with kolom_teks:
+        st.title(judul)
+        if deskripsi:
+            st.caption(deskripsi)
 
 
 def format_persen(skor):
     """Ubah skor 0.0-1.0 menjadi teks persen dengan satu angka desimal."""
     return f"{skor * 100:.1f}%"
-
-
-def label_gejala(nama):
-    """Label Bahasa Indonesia untuk sebuah nama gejala."""
-    return LABEL_GEJALA.get(nama, nama)
 
 
 def nama_mode_similarity(mode):
@@ -40,7 +93,7 @@ def _daftar_gejala(daftar, pesan_kosong):
         st.caption(pesan_kosong)
         return
     for nama in daftar:
-        st.markdown(f"- {label_gejala(nama)} (`{nama}`)")
+        st.markdown(f"- {LABEL_GEJALA.get(nama, nama)} (`{nama}`)")
 
 
 def _angka(nilai):
@@ -57,24 +110,33 @@ def _himpunan(daftar):
 
 
 def tampilkan_tabel_kasus(daftar_kandidat):
-    """Tabel kasus: ID, nama, similarity (desimal + persen), kategori, ringkasan."""
-    baris = []
-    for urutan, kandidat in enumerate(daftar_kandidat, start=1):
-        kasus = kandidat["kasus"]
-        langkah_pertama = kasus["solusi"][0] if kasus.get("solusi") else ""
-        if len(langkah_pertama) > 70:
-            langkah_pertama = langkah_pertama[:67] + "..."
-        baris.append(
-            {
-                "#": urutan,
-                "ID": kasus["id"],
-                "Nama Kasus": kasus["nama_kasus"],
-                "Similarity": f"{kandidat['skor']:.4f} ({format_persen(kandidat['skor'])})",
-                "Kategori": kasus["kategori_solusi"],
-                "Ringkasan Solusi": langkah_pertama,
-            }
-        )
-    st.dataframe(baris, hide_index=True)
+    """Tabel kasus dengan bar kemiripan dan kategori."""
+    baris = [
+        {
+            "ID": kandidat["kasus"]["id"],
+            "Nama Kasus": kandidat["kasus"]["nama_kasus"],
+            "Similarity": float(kandidat["skor"]),
+            "Kategori": kandidat["kasus"]["kategori_solusi"],
+        }
+        for kandidat in daftar_kandidat
+    ]
+    st.dataframe(
+        baris,
+        hide_index=True,
+        column_config={
+            "ID": st.column_config.TextColumn("ID", width="small"),
+            "Nama Kasus": st.column_config.TextColumn("Nama Kasus", width="medium"),
+            "Similarity": st.column_config.ProgressColumn(
+                "Similarity",
+                help="Skor similarity (0-1) dari mode yang dipilih",
+                min_value=0.0,
+                max_value=1.0,
+                format="%.4f",
+                width="small",
+            ),
+            "Kategori": st.column_config.TextColumn("Kategori", width="medium"),
+        },
+    )
 
 
 def tampilkan_langkah_solusi(solusi):

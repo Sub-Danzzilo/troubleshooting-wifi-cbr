@@ -13,6 +13,7 @@ belajar dari umpan balik pengguna.
 - Feedback pengguna, lalu kasus baru disimpan ke case base (siklus 4R lengkap)
 - Pilihan Jaccard biasa atau Weighted Jaccard
 - Case base persisten di `data/case_base.json` dan bisa di-reset dari sidebar
+- Tampilan gelap secara default, bisa diganti ke terang lewat sidebar
 - Perhitungan rinci per kasus untuk validasi manual (himpunan, irisan, gabungan, pembilang, penyebut)
 
 ## Cara Menjalankan
@@ -118,6 +119,8 @@ Keterbatasan: kualitas hasil bergantung pada cakupan case base dan pemilihan bob
 ```
 .
 ├── app.py                  # Entry point Streamlit (state + router halaman)
+├── assets/logo.svg         # Logo aplikasi
+├── .streamlit/config.toml  # Tema terang dengan aksen teal
 ├── AGENTS.md               # Panduan untuk AI agent dan anggota tim
 ├── core/
 │   ├── case_base.py        # 25 gejala, pilihan lampu, bobot, parameter, 15 kasus awal

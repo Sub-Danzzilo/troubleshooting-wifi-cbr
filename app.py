@@ -7,12 +7,17 @@ import streamlit as st
 
 from core import storage
 from ui import halaman_hasil, halaman_input, sidebar
+from ui.komponen import LOGO_PATH, sinkronkan_tema, terapkan_gaya
 
 st.set_page_config(
     page_title="Sistem Pakar Troubleshooting WiFi (CBR)",
-    page_icon="📶",
+    page_icon=str(LOGO_PATH),
     layout="wide",
 )
+
+terapkan_gaya()
+sinkronkan_tema()
+st.logo(str(LOGO_PATH), size="large")
 
 # Inisialisasi state cukup sekali; nilai widget tidak disimpan di sini.
 if "case_base" not in st.session_state:

@@ -3,7 +3,12 @@
 import streamlit as st
 
 from core import storage
-from ui.komponen import kembali_ke_input, nama_mode_similarity
+from ui.komponen import (
+    PILIHAN_TEMA,
+    atur_tema,
+    kembali_ke_input,
+    nama_mode_similarity,
+)
 
 
 def _tabel_semua_kasus(case_base):
@@ -31,6 +36,19 @@ def render():
         )
 
         st.divider()
+        st.subheader("Tampilan")
+        st.radio(
+            "Tema",
+            ["Gelap", "Terang"],
+            horizontal=True,
+            key="tema_tampilan",
+            on_change=atur_tema,
+        )
+        tema_dipilih = PILIHAN_TEMA[st.session_state["tema_tampilan"]]
+        if tema_dipilih != st.session_state["tema_terpasang"]:
+            st.caption("Muat ulang halaman sekali untuk menerapkan tema.")
+            st.link_button("Muat ulang halaman", ".", width="stretch")
+
         st.subheader("Mode Similarity")
         st.radio(
             "Metode",
@@ -42,7 +60,7 @@ def render():
 
         st.divider()
         case_base = st.session_state.get("case_base", [])
-        st.metric("Jumlah kasus", len(case_base))
+        st.metric("Jumlah kasus", len(case_base), border=True)
         with st.expander("Lihat semua kasus"):
             _tabel_semua_kasus(case_base)
 
