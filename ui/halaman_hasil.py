@@ -1,29 +1,178 @@
-# =============================================================================
-# ui/halaman_hasil.py  —  HALAMAN 2: HASIL DIAGNOSIS
-# =============================================================================
-# ISI FILE INI NANTINYA:
-#
-# render() yang menggambar:
-#   - Tabel top-3 kasus: ID, nama kasus, similarity %, kategori, ringkasan.
-#   - Rekomendasi utama: langkah solusi dari kandidat saat ini (hasil reuse).
-#   - Confidence bar (st.progress) sesuai similarity. Jika di bawah ambang,
-#     tampilkan peringatan "tidak ada kasus yang cukup mirip".
-#   - Penjelasan transparan: gejala cocok, gejala hanya di input, gejala hanya di kasus.
-#   - Form feedback (Revise): radio Ya/Tidak.
-#       * Ya    -> tombol "Simpan ke Basis Kasus" (panggil retain).
-#       * Tidak -> tampilkan solusi kandidat berikutnya; bila habis, tampilkan
-#                  kolom teks opsional "Solusi yang akhirnya berhasil".
-#   - Setelah retain: pesan jelas apakah kasus DITAMBAH (jumlah kasus naik)
-#     atau hanya menaikkan jumlah_dipakai (duplikat).
-#   - Tombol "Diagnosis Baru" untuk kembali ke halaman input dan membersihkan state.
-#
-# PENTING: simpan status feedback di st.session_state agar tombol "Simpan"
-# tidak hilang saat Streamlit rerun.
-#
-# TAMBAHAN (VALIDASI MANUAL):
-#   - Untuk setiap kasus di top-3, sediakan st.expander "Lihat perhitungan rinci".
-#   - Isinya dari similarity.hitung_rinci: himpunan A dan B, irisan, gabungan,
-#     jumlah anggota, rumus dengan angka terisi (contoh: "3 / 4 = 0,75"),
-#     dan untuk Weighted Jaccard tabel bobot per gejala.
-#   - Tujuannya: saat sidang, penguji bisa mencocokkan hitungan papan tulis
-#     dengan angka yang ditampilkan aplikasi.
+"""Halaman 2: hasil diagnosis, perhitungan rinci, dan umpan balik (Revise)."""
+
+import streamlit as st
+
+from core import cbr_engine, storage
+from core.case_base import BOBOT_GEJALA, TOP_K
+from core.similarity import hitung_rinci
+from ui.komponen import (
+    format_persen,
+    tampilkan_langkah_solusi,
+    tampilkan_penjelasan_gejala,
+    tampilkan_perhitungan_rinci,
+    tampilkan_tabel_kasus,
+)
+
+
+def _kembali_ke_input():
+    """Kembali ke halaman input dan bersihkan form pada rerun berikutnya."""
+    st.session_state["reset_form"] = True
+    st.session_state["halaman"] = "input"
+    st.session_state["gejala_input"] = []
+    st.session_state["hasil_retrieve"] = None
+    st.session_state["indeks_kandidat"] = 0
+    st.session_state["info_retain"] = None
+    st.session_state["status_feedback"] = "belum"
+    st.rerun()
+
+
+def _simpan_retain(gejala_input, kasus_acuan, solusi):
+    """Jalankan Retain, persist ke JSON, dan simpan hasilnya di session_state."""
+    case_base_baru, info = cbr_engine.retain(
+        gejala_input,
+        kasus_acuan,
+        solusi,
+        "berhasil",
+        st.session_state["case_base"],
+    )
+    storage.simpan_case_base(case_base_baru)
+    st.session_state["case_base"] = case_base_baru
+    st.session_state["info_retain"] = info
+    st.session_state["status_feedback"] = "berhasil"
+    st.rerun()
+
+
+def render():
+    st.title("Hasil Diagnosis")
+    gejala_input = st.session_state.get("gejala_input") or []
+    if not gejala_input:
+        st.info("Belum ada diagnosis. Silakan isi gejala terlebih dahulu.")
+        if st.button("⬅️ Kembali ke halaman input"):
+            _kembali_ke_input()
+        return
+
+    mode = st.session_state.get("mode_similarity", "jaccard")
+    hasil = cbr_engine.retrieve(gejala_input, st.session_state["case_base"], mode)
+    st.session_state["hasil_retrieve"] = hasil
+    kandidat = hasil["kandidat"]
+
+    if not kandidat:
+        st.error("Case base kosong. Gunakan tombol Reset Case Base di sidebar.")
+        return
+
+    indeks = max(0, int(st.session_state.get("indeks_kandidat", 0)))
+    indeks = min(indeks, len(kandidat) - 1)
+    st.session_state["indeks_kandidat"] = indeks
+
+    nama_mode = "Weighted Jaccard" if mode == "weighted" else "Jaccard"
+    st.caption(
+        f"Mode similarity: **{nama_mode}** · Ambang minimum: "
+        f"{format_persen(hasil['ambang_min'])} · Gejala terpilih: {len(gejala_input)}"
+    )
+
+    if hasil["ada_kecocokan"]:
+        teratas = kandidat[0]
+        st.success(
+            f"Kasus paling mirip: **{teratas['kasus']['id']} — {teratas['kasus']['nama_kasus']}** "
+            f"(similarity {format_persen(teratas['skor'])})"
+        )
+    else:
+        st.warning(
+            f"Tidak ada kasus yang cukup mirip: skor tertinggi "
+            f"{format_persen(hasil['skor_tertinggi'])} di bawah ambang "
+            f"{format_persen(hasil['ambang_min'])}. Kasus terdekat tetap ditampilkan "
+            "sebagai rujukan, tetapi solusinya belum tentu tepat."
+        )
+
+    st.subheader(f"Top-{min(TOP_K, len(kandidat))} Kasus Paling Mirip")
+    tampilkan_tabel_kasus(kandidat[:TOP_K])
+
+    for urutan, item in enumerate(kandidat[:TOP_K], start=1):
+        judul = (
+            f"Lihat perhitungan rinci — {urutan}. {item['kasus']['id']} "
+            f"(skor {item['skor']:.4f})"
+        )
+        with st.expander(judul):
+            rinci = hitung_rinci(
+                gejala_input,
+                item["kasus"]["gejala"],
+                hasil["mode_similarity"],
+                BOBOT_GEJALA,
+            )
+            tampilkan_perhitungan_rinci(rinci)
+
+    st.divider()
+    pilihan = kandidat[indeks]
+    kasus = pilihan["kasus"]
+    reuse = cbr_engine.reuse(kasus, gejala_input)
+
+    st.subheader(f"Rekomendasi Solusi (kandidat {indeks + 1} dari {len(kandidat)})")
+    st.markdown(
+        f"**{kasus['id']} — {kasus['nama_kasus']}**  \n"
+        f"Kategori: `{kasus['kategori_solusi']}` · Sumber: {kasus['sumber']} · "
+        f"Sudah dipakai {kasus['jumlah_dipakai']}x"
+    )
+    st.progress(
+        max(0.0, min(1.0, pilihan["skor"])),
+        text=f"Similarity {pilihan['skor']:.4f} ({format_persen(pilihan['skor'])})",
+    )
+    tampilkan_langkah_solusi(reuse["solusi"])
+
+    st.markdown("**Penjelasan gejala**")
+    tampilkan_penjelasan_gejala(reuse["penjelasan"])
+    if reuse["perlu_diverifikasi"]:
+        with st.expander("Hal yang perlu diverifikasi"):
+            st.write(
+                "Gejala berikut tidak sepenuhnya sama dengan kasus rujukan. Pastikan "
+                "kondisinya memang seperti ini sebelum menjalankan solusi."
+            )
+            for item in reuse["perlu_diverifikasi"]:
+                keterangan = "hanya ada pada keluhan Anda" if item["jenis"] == "hanya_input" else "hanya ada pada kasus"
+                st.markdown(f"- {item['label']} (`{item['gejala']}`) — {keterangan}")
+
+    st.divider()
+    st.subheader("Umpan Balik (Revise)")
+    info_retain = st.session_state.get("info_retain")
+    if info_retain:
+        if info_retain["aksi"] == "ditambahkan":
+            st.success(info_retain["pesan"])
+        else:
+            st.info(info_retain["pesan"])
+        st.caption(f"Jumlah kasus pada basis kasus: {info_retain['jumlah_kasus']}")
+    else:
+        jawaban = st.radio(
+            "Apakah solusi di atas berhasil?",
+            ["Belum dijawab", "Ya, berhasil", "Tidak berhasil"],
+            index=0,
+            horizontal=True,
+            key=f"pilihan_feedback_{indeks}",
+        )
+
+        if jawaban == "Ya, berhasil":
+            if st.button("💾 Simpan ke Basis Kasus (Retain)", type="primary"):
+                _simpan_retain(gejala_input, kasus, kasus["solusi"])
+
+        elif jawaban == "Tidak berhasil":
+            hasil_revise = cbr_engine.revise(hasil, indeks, False)
+            if hasil_revise["keputusan"] == "kandidat_berikutnya":
+                st.info(hasil_revise["pesan"])
+                if st.button("➡️ Coba Kandidat Berikutnya", type="primary"):
+                    st.session_state["indeks_kandidat"] = hasil_revise["indeks_kandidat"]
+                    st.rerun()
+            else:
+                st.warning(hasil_revise["pesan"])
+                with st.form("form_solusi_pengguna"):
+                    teks_solusi = st.text_area(
+                        "Solusi yang akhirnya berhasil (opsional)",
+                        placeholder="Tuliskan langkah yang benar-benar menyelesaikan masalah.",
+                    )
+                    kirim = st.form_submit_button("Simpan Solusi Pengguna (Retain)")
+                if kirim:
+                    if not teks_solusi.strip():
+                        st.error("Tuliskan solusi terlebih dahulu sebelum menyimpan.")
+                    else:
+                        _simpan_retain(gejala_input, None, [teks_solusi.strip()])
+
+    st.divider()
+    if st.button("🔄 Diagnosis Baru"):
+        _kembali_ke_input()

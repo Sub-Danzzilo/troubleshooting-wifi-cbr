@@ -103,6 +103,17 @@ python -m pytest                        # jalankan uji (dari root proyek)
 python -m evaluasi.jalankan_evaluasi    # evaluasi akurasi retrieval
 ```
 
+## Commit dan Push
+
+- Setiap kali selesai mengerjakan sesuatu, agent WAJIB menuliskan usulan **commit message
+  dalam Bahasa Inggris** di akhir balasan chat (bukan dijalankan sendiri).
+- Format yang dipakai: Conventional Commits, judul singkat satu baris, lalu body secukupnya
+  bila perubahan perlu dijelaskan.
+- Agent TIDAK boleh menjalankan `git commit`, `git push`, atau mengubah konfigurasi git.
+  Commit dan push sepenuhnya tanggung jawab anggota tim.
+- Bila perubahan sebaiknya dipecah, usulkan beberapa commit message terpisah dan sebutkan
+  berkas yang masuk ke masing-masing commit.
+
 ## Definition of Done
 
 - [ ] `streamlit run app.py` berjalan tanpa error dari awal.

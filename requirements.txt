@@ -1,4 +1,4 @@
-# Dependensi proyek. Pin versi setelah aplikasi berjalan stabil (pip freeze).
-streamlit
+# Dependensi proyek (versi yang dipakai saat pengujian terakhir).
+streamlit==1.67.0
 # pytest hanya untuk menjalankan folder tests/
-pytest
+pytest==9.2.0
