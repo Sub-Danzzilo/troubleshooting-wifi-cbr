@@ -44,7 +44,11 @@ if "reset_form" not in st.session_state:
 if st.session_state["reset_form"]:
     st.session_state["reset_form"] = False
     awalan = ("gejala_", "pilihan_", "konfirmasi_reset")
-    for kunci in [k for k in st.session_state.keys() if k.startswith(awalan)]:
+    for kunci in [
+        k
+        for k in st.session_state.keys()
+        if isinstance(k, str) and k.startswith(awalan)
+    ]:
         del st.session_state[kunci]
 
 sidebar.render()

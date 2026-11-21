@@ -3,7 +3,9 @@
 Hanya urusan tampilan/state UI; tidak ada perhitungan similarity di sini.
 """
 
+from collections.abc import Iterable, Sequence
 from pathlib import Path
+from typing import Any
 
 import streamlit as st
 
@@ -12,10 +14,10 @@ from core.case_base import LABEL_GEJALA
 LOGO_PATH = Path(__file__).resolve().parents[1] / "assets" / "logo.svg"
 
 
-PILIHAN_TEMA = {"Gelap": "dark", "Terang": "light"}
+PILIHAN_TEMA: dict[str, str] = {"Gelap": "dark", "Terang": "light"}
 
 
-def terapkan_gaya():
+def terapkan_gaya() -> None:
     """Gaya global seperlunya: lebar konten dan sembunyikan elemen non-aplikasi."""
     st.markdown(
         """
@@ -29,33 +31,36 @@ def terapkan_gaya():
     )
 
 
-def sinkronkan_tema():
+def sinkronkan_tema() -> None:
     """Catat tema yang sudah terpasang dan samakan pilihan pada sesi baru."""
     if "tema_terpasang" in st.session_state:
         return
     try:
-        base = st._config.get_option("theme.base")
+        base = st.get_option("theme.base")
     except Exception:
         base = "dark"
     st.session_state["tema_terpasang"] = base
     st.session_state["tema_tampilan"] = "Terang" if base == "light" else "Gelap"
 
 
-def atur_tema():
+def atur_tema() -> None:
     """Terapkan pilihan tema sidebar ke konfigurasi Streamlit.
 
     Streamlit belum punya API publik untuk mengganti tema saat runtime, jadi
     dipakai helper konfigurasi internal yang sesuai dengan versi yang dipin di
     requirements.txt.
     """
-    base = PILIHAN_TEMA.get(st.session_state.get("tema_tampilan"), "dark")
+    tema = str(st.session_state.get("tema_tampilan") or "Gelap")
+    base = PILIHAN_TEMA.get(tema, "dark")
     try:
-        st._config.set_option("theme.base", base)
+        # Streamlit belum punya API publik untuk mengganti tema saat runtime,
+        # jadi dipakai helper konfigurasi internal yang sesuai versi di requirements.txt.
+        st._config.set_option("theme.base", base)  # pyright: ignore[reportPrivateImportUsage]
     except Exception as kesalahan:  # pragma: no cover - hanya bila API internal berubah
         st.sidebar.warning(f"Tema tidak dapat diganti: {kesalahan}")
 
 
-def tampilkan_header(judul, deskripsi=""):
+def tampilkan_header(judul: str, deskripsi: str = "") -> None:
     """Header halaman: logo di kiri, judul dan deskripsi di kanan."""
     kolom_logo, kolom_teks = st.columns([1, 14], vertical_alignment="center")
     with kolom_logo:
@@ -66,17 +71,17 @@ def tampilkan_header(judul, deskripsi=""):
             st.caption(deskripsi)
 
 
-def format_persen(skor):
+def format_persen(skor: float) -> str:
     """Ubah skor 0.0-1.0 menjadi teks persen dengan satu angka desimal."""
     return f"{skor * 100:.1f}%"
 
 
-def nama_mode_similarity(mode):
+def nama_mode_similarity(mode: str) -> str:
     """Nama tampilan mode similarity."""
     return "Weighted Jaccard" if mode == "weighted" else "Jaccard biasa"
 
 
-def kembali_ke_input():
+def kembali_ke_input() -> None:
     """Kembali ke halaman input dan bersihkan form pada rerun berikutnya."""
     st.session_state["reset_form"] = True
     st.session_state["halaman"] = "input"
@@ -88,7 +93,7 @@ def kembali_ke_input():
     st.rerun()
 
 
-def _daftar_gejala(daftar, pesan_kosong):
+def _daftar_gejala(daftar: Sequence[str], pesan_kosong: str) -> None:
     if not daftar:
         st.caption(pesan_kosong)
         return
@@ -96,20 +101,20 @@ def _daftar_gejala(daftar, pesan_kosong):
         st.markdown(f"- {LABEL_GEJALA.get(nama, nama)} (`{nama}`)")
 
 
-def _angka(nilai):
+def _angka(nilai: float) -> str:
     """Tampilkan angka tanpa desimal bila nilainya bulat (6.0 -> 6)."""
     if isinstance(nilai, float) and nilai.is_integer():
         return str(int(nilai))
     return f"{nilai:g}"
 
 
-def _himpunan(daftar):
+def _himpunan(daftar: Sequence[str]) -> str:
     if not daftar:
         return "∅"
     return "{" + ", ".join(daftar) + "}"
 
 
-def tampilkan_tabel_kasus(daftar_kandidat):
+def tampilkan_tabel_kasus(daftar_kandidat: Sequence[dict[str, Any]]) -> None:
     """Tabel kasus dengan bar kemiripan dan kategori."""
     baris = [
         {
@@ -139,13 +144,13 @@ def tampilkan_tabel_kasus(daftar_kandidat):
     )
 
 
-def tampilkan_langkah_solusi(solusi):
+def tampilkan_langkah_solusi(solusi: Iterable[str]) -> None:
     """Daftar bernomor langkah solusi."""
     for nomor, langkah in enumerate(solusi, start=1):
         st.markdown(f"**{nomor}.** {langkah}")
 
 
-def tampilkan_penjelasan_gejala(penjelasan):
+def tampilkan_penjelasan_gejala(penjelasan: dict[str, list[str]]) -> None:
     """Tiga kelompok gejala: cocok, hanya di input, hanya di kasus."""
     kolom = st.columns(3)
     with kolom[0]:
@@ -159,7 +164,7 @@ def tampilkan_penjelasan_gejala(penjelasan):
         _daftar_gejala(penjelasan["hanya_kasus"], "Tidak ada gejala yang tidak dilaporkan.")
 
 
-def tampilkan_perhitungan_rinci(rinci):
+def tampilkan_perhitungan_rinci(rinci: dict[str, Any]) -> None:
     """Tampilkan langkah hitung similarity yang bisa ditulis ulang di papan tulis."""
     st.markdown(f"**Rumus {rinci['mode']}**: `{rinci['rumus']}`")
     st.markdown(f"**A (input)** = `{_himpunan(rinci['himpunan_a'])}` → {rinci['jumlah_a']} anggota")
@@ -173,7 +178,7 @@ def tampilkan_perhitungan_rinci(rinci):
             f"**{rinci['hasil']:.4f}**"
         )
     else:
-        tabel = [
+        tabel: list[dict[str, Any]] = [
             {
                 "Gejala": item["gejala"],
                 "Label": item["label"],

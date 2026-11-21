@@ -3,6 +3,7 @@
 import streamlit as st
 
 from core import storage
+from core.case_base import Kasus
 from ui.komponen import (
     PILIHAN_TEMA,
     atur_tema,
@@ -11,7 +12,7 @@ from ui.komponen import (
 )
 
 
-def _tabel_semua_kasus(case_base):
+def _tabel_semua_kasus(case_base: list[Kasus]) -> None:
     baris = [
         {
             "ID": kasus["id"],
@@ -26,7 +27,7 @@ def _tabel_semua_kasus(case_base):
     st.dataframe(baris, hide_index=True)
 
 
-def render():
+def render() -> None:
     with st.sidebar:
         st.header("Tentang Sistem")
         st.write(
@@ -59,7 +60,7 @@ def render():
         st.caption("Mengubah mode langsung menghitung ulang skor pada halaman hasil.")
 
         st.divider()
-        case_base = st.session_state.get("case_base", [])
+        case_base: list[Kasus] = st.session_state.get("case_base") or []
         st.metric("Jumlah kasus", len(case_base), border=True)
         with st.expander("Lihat semua kasus"):
             _tabel_semua_kasus(case_base)

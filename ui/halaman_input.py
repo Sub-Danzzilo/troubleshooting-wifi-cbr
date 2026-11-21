@@ -4,17 +4,22 @@ Semua widget disimpan di st.session_state lewat key-nya masing-masing agar
 pilihan tidak hilang saat Streamlit rerun.
 """
 
+from collections.abc import Iterable, Mapping
+
 import streamlit as st
 
 from core.case_base import DAFTAR_GEJALA, PILIHAN_LAMPU
 from ui.komponen import tampilkan_header
 
 
-def _gejala_kelompok(kelompok):
+def _gejala_kelompok(kelompok: str) -> list[dict[str, str]]:
     return [gejala for gejala in DAFTAR_GEJALA if gejala["kelompok"] == kelompok]
 
 
-def konversi_pilihan_ke_gejala(pilihan_lampu, gejala_terpilih):
+def konversi_pilihan_ke_gejala(
+    pilihan_lampu: Mapping[str, str | None] | None,
+    gejala_terpilih: Iterable[str],
+) -> list[str]:
     """Ubah pilihan radio lampu + checkbox menjadi daftar nama gejala boolean.
 
     Parameter:
@@ -29,7 +34,7 @@ def konversi_pilihan_ke_gejala(pilihan_lampu, gejala_terpilih):
     return sorted(set(gejala))
 
 
-def validasi_input(gejala):
+def validasi_input(gejala: Iterable[str]) -> list[str]:
     """Peringatan form (bukan inferensi): input kosong atau kontradiktif."""
     peringatan = []
     if not gejala:
@@ -42,7 +47,7 @@ def validasi_input(gejala):
     return peringatan
 
 
-def render():
+def render() -> None:
     tampilkan_header(
         "Sistem Pakar Troubleshooting WiFi",
         "Case-Based Reasoning (CBR) dengan siklus Retrieve, Reuse, Revise, dan Retain.",
@@ -105,16 +110,16 @@ def render():
         and st.session_state.get(f"gejala_{gejala['nama']}")
     ]
 
-    pilihan_lampu = {}
+    pilihan_lampu: dict[str, str | None] = {}
     if not tanpa_indikator:
         for nama_lampu, pilihan in PILIHAN_LAMPU.items():
             label_terpilih = st.session_state.get(f"pilihan_{nama_lampu}", "Tidak tahu")
             pasangan = {label: nama_gejala for label, nama_gejala in pilihan}
             pilihan_lampu[nama_lampu] = pasangan.get(label_terpilih)
 
-    gejala = konversi_pilihan_ke_gejala(pilihan_lampu, gejala_terpilih)
-    peringatan = validasi_input(gejala)
-    if not gejala:
+    gejala_final = konversi_pilihan_ke_gejala(pilihan_lampu, gejala_terpilih)
+    peringatan = validasi_input(gejala_final)
+    if not gejala_final:
         for pesan in peringatan:
             st.error(pesan)
         return
@@ -122,7 +127,7 @@ def render():
     for pesan in peringatan:
         st.warning(pesan)
 
-    st.session_state["gejala_input"] = gejala
+    st.session_state["gejala_input"] = gejala_final
     st.session_state["indeks_kandidat"] = 0
     st.session_state["info_retain"] = None
     st.session_state["status_feedback"] = "belum"

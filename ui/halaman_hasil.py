@@ -1,9 +1,12 @@
 """Halaman 2: hasil diagnosis, perhitungan rinci, dan umpan balik (Revise)."""
 
+from collections.abc import Iterable
+from typing import Any
+
 import streamlit as st
 
 from core import cbr_engine, storage
-from core.case_base import BOBOT_GEJALA, TOP_K
+from core.case_base import BOBOT_GEJALA, TOP_K, Kasus
 from core.similarity import hitung_rinci
 from ui.komponen import (
     format_persen,
@@ -17,7 +20,11 @@ from ui.komponen import (
 )
 
 
-def _simpan_retain(gejala_input, kasus_acuan, solusi):
+def _simpan_retain(
+    gejala_input: Iterable[str],
+    kasus_acuan: Kasus | None,
+    solusi: Iterable[str],
+) -> None:
     """Jalankan Retain, persist ke JSON, dan simpan hasilnya di session_state."""
     case_base_baru, info = cbr_engine.retain(
         gejala_input,
@@ -33,7 +40,13 @@ def _simpan_retain(gejala_input, kasus_acuan, solusi):
     st.rerun()
 
 
-def _terapkan_revise(hasil, indeks, gejala_input, berhasil, solusi_baru=None):
+def _terapkan_revise(
+    hasil: dict[str, Any],
+    indeks: int,
+    gejala_input: Iterable[str],
+    berhasil: bool,
+    solusi_baru: str | None = None,
+) -> None:
     """Jalankan tahap Revise, lalu Retain bila keputusannya menyimpan kasus."""
     keputusan = cbr_engine.revise(hasil, indeks, berhasil, solusi_baru=solusi_baru)
     if keputusan["keputusan"] == "retain":
@@ -43,7 +56,7 @@ def _terapkan_revise(hasil, indeks, gejala_input, berhasil, solusi_baru=None):
         _simpan_retain(gejala_input, None, [keputusan["solusi_baru"]])
 
 
-def render():
+def render() -> None:
     gejala_input = st.session_state.get("gejala_input") or []
     if not gejala_input:
         tampilkan_header("Hasil Diagnosis")
