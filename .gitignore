@@ -6,3 +6,5 @@ venv/
 .freebuff
 # case_base.json dibuat otomatis saat aplikasi pertama dijalankan (state runtime)
 data/case_base.json
+# Catatan internal tim untuk penyusunan artikel (tidak ikut commit)
+catatan-laporan/

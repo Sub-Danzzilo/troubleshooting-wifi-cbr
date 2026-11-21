@@ -2,3 +2,6 @@
 streamlit==1.67.0
 # pytest hanya untuk menjalankan folder tests/
 pytest==9.2.0
+# Pemeriksaan tipe (lihat AGENTS.md); pilih salah satu, keduanya boleh dipasang
+mypy==2.4.1
+pyright==1.1.414

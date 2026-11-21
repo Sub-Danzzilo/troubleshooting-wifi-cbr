@@ -7,6 +7,21 @@ kesimpulan).
 """
 
 import os
+from typing import TypedDict
+
+
+class Kasus(TypedDict):
+    """Struktur satu kasus pada basis pengetahuan CBR."""
+
+    id: str
+    nama_kasus: str
+    gejala: list[str]
+    solusi: list[str]
+    kategori_solusi: str
+    status: str
+    jumlah_dipakai: int
+    sumber: str
+
 
 # ---------------------------------------------------------------------------
 # 1. DAFTAR_GEJALA — 25 gejala boolean
@@ -15,7 +30,7 @@ import os
 #    Kelompok C: informasi tambahan (checkbox)
 # ---------------------------------------------------------------------------
 
-DAFTAR_GEJALA = [
+DAFTAR_GEJALA: list[dict[str, str]] = [
     # --- Kelompok A: keluhan utama -----------------------------------------
     {"nama": "tidak_connect", "label": "Tidak bisa terhubung ke WiFi sama sekali", "kelompok": "A"},
     {"nama": "connect_tapi_tanpa_internet", "label": "Terhubung ke WiFi, tetapi tidak ada akses internet", "kelompok": "A"},
@@ -48,7 +63,9 @@ DAFTAR_GEJALA = [
     {"nama": "sinyal_lemah", "label": "Sinyal lemah / perangkat jauh dari router / banyak dinding", "kelompok": "C"},
 ]
 
-LABEL_GEJALA = {gejala["nama"]: gejala["label"] for gejala in DAFTAR_GEJALA}
+LABEL_GEJALA: dict[str, str] = {
+    gejala["nama"]: gejala["label"] for gejala in DAFTAR_GEJALA
+}
 
 # ---------------------------------------------------------------------------
 # 2. PILIHAN_LAMPU — satu lampu = satu radio di UI
@@ -56,7 +73,7 @@ LABEL_GEJALA = {gejala["nama"]: gejala["label"] for gejala in DAFTAR_GEJALA}
 #    (dipakai untuk opsi "Tidak tahu").
 # ---------------------------------------------------------------------------
 
-PILIHAN_LAMPU = {
+PILIHAN_LAMPU: dict[str, list[tuple[str, str | None]]] = {
     "POWER": [
         ("Tidak tahu", None),
         ("Menyala", "power_nyala"),
@@ -99,7 +116,7 @@ PILIHAN_LAMPU = {
 #    1.0 = keluhan/informasi umum.
 # ---------------------------------------------------------------------------
 
-BOBOT_GEJALA = {
+BOBOT_GEJALA: dict[str, float] = {
     # Keluhan utama
     "tidak_connect": 1.0,
     "connect_tapi_tanpa_internet": 1.0,
@@ -148,7 +165,7 @@ AMBANG_MIN_SIMILARITY = 0.30
 AMBANG_DUPLIKAT = 1.0
 TOP_K = 3
 
-PATH_CASE_BASE_JSON = os.path.join(
+PATH_CASE_BASE_JSON: str = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "data",
     "case_base.json",
@@ -161,7 +178,7 @@ PATH_CASE_BASE_JSON = os.path.join(
 #    similarity mudah dihitung manual di papan tulis.
 # ---------------------------------------------------------------------------
 
-CASE_BASE_AWAL = [
+CASE_BASE_AWAL: list[Kasus] = [
     # --- kabel_optik_bermasalah -------------------------------------------
     {
         "id": "K01",

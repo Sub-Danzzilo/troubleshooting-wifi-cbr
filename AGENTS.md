@@ -32,6 +32,7 @@ jangan dikerjakan diam-diam.
 
 ```
 app.py                      Entry point + router halaman (tanpa logika CBR)
+pyproject.toml              Konfigurasi mypy dan Pyright/Pylance
 core/
   case_base.py              Data & parameter: DAFTAR_GEJALA, PILIHAN_LAMPU, BOBOT_GEJALA,
                             ambang, CASE_BASE_AWAL (15 kasus)
@@ -94,12 +95,32 @@ membandingkannya dengan output aplikasi. Karena itu:
   agar tombol tidak hilang saat rerun.
 - Case base asli (`CASE_BASE_AWAL`) tidak boleh dimodifikasi saat runtime; selalu bekerja pada salinan.
 
+## Pemeriksaan Tipe (wajib)
+
+- Semua fungsi, termasuk helper internal dan fungsi uji, wajib punya type hint lengkap.
+- Konfigurasi ada di `pyproject.toml`: bagian `[tool.mypy]` untuk mypy dan
+  `[tool.pyright]` untuk Pyright (Pylance di VS Code membaca konfigurasi yang sama).
+- Setelah menulis atau mengubah kode Python, jalankan salah satu (keduanya lebih baik):
+
+  ```bash
+  python -m mypy
+  python -m pyright
+  ```
+
+- Pekerjaan belum dianggap selesai bila masih ada error tipe. Jangan menonaktifkan
+  pemeriksaan, menurunkan mode Pyright, atau menambah `# type: ignore` tanpa alasan
+  hanya agar pemeriksaan lulus.
+- Bila `# type: ignore[...]` benar-benar diperlukan (misalnya keterbatasan stub pihak
+  ketiga), tulis kode error yang spesifik dan jelaskan alasannya di komentar.
+
 ## Perintah
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py                    # jalankan aplikasi
 python -m pytest                        # jalankan uji (dari root proyek)
+python -m mypy                          # cek tipe dengan mypy (wajib)
+python -m pyright                       # alternatif cek tipe, konfigurasi sama
 python -m evaluasi.jalankan_evaluasi    # evaluasi akurasi retrieval
 ```
 
@@ -117,6 +138,7 @@ python -m evaluasi.jalankan_evaluasi    # evaluasi akurasi retrieval
 ## Definition of Done
 
 - [ ] `streamlit run app.py` berjalan tanpa error dari awal.
+- [ ] `python -m mypy` dan/atau `python -m pyright` lulus tanpa error tipe.
 - [ ] Empat fungsi 4R ada, terpisah, berdocstring.
 - [ ] Skor similarity dan penjelasan gejala tampil di UI.
 - [ ] Perhitungan rinci tampil di UI dan cocok dengan hitungan tangan.
@@ -133,3 +155,4 @@ python -m evaluasi.jalankan_evaluasi    # evaluasi akurasi retrieval
 - Mengubah batasan di dokumen ini tanpa persetujuan tim.
 - Menulis solusi kasus berupa placeholder ("isi nanti", "lorem ipsum").
 - Menambah dependensi tanpa alasan jelas; catat di `requirements.txt` bila memang perlu.
+- Mematikan atau melunakkan pemeriksaan tipe (mypy/Pyright) hanya agar kode dianggap lulus.

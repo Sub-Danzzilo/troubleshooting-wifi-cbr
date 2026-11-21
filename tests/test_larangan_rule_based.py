@@ -35,14 +35,14 @@ POLA_LAMPU_KE_KESIMPULAN = re.compile(
 
 
 @pytest.mark.parametrize("berkas", BERKAS_DIPERIKSA, ids=lambda path: path.name)
-def test_tidak_ada_pola_rule_based(berkas):
+def test_tidak_ada_pola_rule_based(berkas: Path) -> None:
     isi = berkas.read_text(encoding="utf-8")
     for pola, keterangan in POLA_TERLARANG:
         assert not pola.search(isi), f"{berkas.name} memakai pola terlarang: {keterangan}"
 
 
 @pytest.mark.parametrize("berkas", BERKAS_DIPERIKSA, ids=lambda path: path.name)
-def test_tidak_ada_if_lampu_ke_kesimpulan(berkas):
+def test_tidak_ada_if_lampu_ke_kesimpulan(berkas: Path) -> None:
     isi = berkas.read_text(encoding="utf-8")
     assert not POLA_LAMPU_KE_KESIMPULAN.search(isi), (
         f"{berkas.name} membandingkan status lampu dengan string kesimpulan"
@@ -50,7 +50,7 @@ def test_tidak_ada_if_lampu_ke_kesimpulan(berkas):
 
 
 @pytest.mark.parametrize("nama", sorted((AKAR / "core").glob("*.py")), ids=lambda path: path.name)
-def test_core_tidak_import_streamlit(nama):
+def test_core_tidak_import_streamlit(nama: Path) -> None:
     isi = nama.read_text(encoding="utf-8")
     assert "import streamlit" not in isi
     assert "from streamlit" not in isi
@@ -60,7 +60,7 @@ def test_core_tidak_import_streamlit(nama):
     "nama,tahap",
     [("retrieve", "retrieve"), ("reuse", "reuse"), ("revise", "revise"), ("retain", "retain")],
 )
-def test_fungsi_empat_r_ada_dan_berdocstring(nama, tahap):
+def test_fungsi_empat_r_ada_dan_berdocstring(nama: str, tahap: str) -> None:
     fungsi = getattr(cbr_engine, nama, None)
     assert fungsi is not None, f"core.cbr_engine.{nama} tidak ditemukan"
     assert callable(fungsi)

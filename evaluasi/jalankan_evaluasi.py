@@ -6,24 +6,30 @@ Memakai CASE_BASE_AWAL langsung (bukan data/case_base.json) agar hasil evaluasi
 tidak berubah karena kasus hasil retain.
 """
 
+import io
 import sys
+from collections.abc import Iterable, Sequence
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from core import cbr_engine
-from core.case_base import CASE_BASE_AWAL
+from core.case_base import CASE_BASE_AWAL, Kasus
 from core.similarity import hitung_rinci
 from evaluasi.skenario_uji import SKENARIO_UJI
 
-PASANGAN_MODE = [("jaccard", "Jaccard"), ("weighted", "Weighted Jaccard")]
-DOKUMEN = Path(__file__).resolve().parent.parent / "docs" / "hasil_evaluasi.md"
+PASANGAN_MODE: list[tuple[str, str]] = [
+    ("jaccard", "Jaccard"),
+    ("weighted", "Weighted Jaccard"),
+]
+DOKUMEN: Path = Path(__file__).resolve().parent.parent / "docs" / "hasil_evaluasi.md"
 
 
-def _persen(nilai):
+def _persen(nilai: float) -> str:
     return f"{nilai * 100:.1f}%"
 
 
-def _tabel(header, rows):
+def _tabel(header: Sequence[str], rows: Iterable[Sequence[object]]) -> str:
     baris = ["| " + " | ".join(header) + " |"]
     baris.append("| " + " | ".join(["---"] * len(header)) + " |")
     for row in rows:
@@ -31,13 +37,18 @@ def _tabel(header, rows):
     return "\n".join(baris)
 
 
-def _akurasi(baris, kunci):
+def _akurasi(baris: Sequence[dict[str, Any]], kunci: str) -> float:
     if not baris:
         return 0.0
     return sum(1 for item in baris if item[kunci]) / len(baris)
 
 
-def _uji_kasus(gejala, kategori_harapan, case_base, mode):
+def _uji_kasus(
+    gejala: Iterable[str],
+    kategori_harapan: str,
+    case_base: list[Kasus],
+    mode: str,
+) -> dict[str, Any]:
     """Ringkas hasil retrieve satu kasus uji: top-1, skor, dan status benar."""
     hasil = cbr_engine.retrieve(gejala, case_base, mode)
     top = hasil["kandidat"][:3]
@@ -53,9 +64,9 @@ def _uji_kasus(gejala, kategori_harapan, case_base, mode):
     }
 
 
-def uji_leave_one_out(mode):
+def uji_leave_one_out(mode: str) -> list[dict[str, Any]]:
     """Tiap kasus diuji terhadap 14 kasus lain (dirinya dikeluarkan)."""
-    baris = []
+    baris: list[dict[str, Any]] = []
     for kasus_uji in CASE_BASE_AWAL:
         basis = [kasus for kasus in CASE_BASE_AWAL if kasus["id"] != kasus_uji["id"]]
         ringkas = _uji_kasus(kasus_uji["gejala"], kasus_uji["kategori_solusi"], basis, mode)
@@ -69,9 +80,9 @@ def uji_leave_one_out(mode):
     return baris
 
 
-def uji_skenario(mode):
+def uji_skenario(mode: str) -> list[dict[str, Any]]:
     """Lima skenario baru dicocokkan ke seluruh CASE_BASE_AWAL."""
-    baris = []
+    baris: list[dict[str, Any]] = []
     for skenario in SKENARIO_UJI:
         ringkas = _uji_kasus(
             skenario["gejala"], skenario["kategori_diharapkan"], CASE_BASE_AWAL, mode
@@ -87,7 +98,7 @@ def uji_skenario(mode):
     return baris
 
 
-def _bagian_leave_one_out(baris):
+def _bagian_leave_one_out(baris: Sequence[dict[str, Any]]) -> str:
     rows = [
         (
             item["kasus_uji"],
@@ -106,7 +117,7 @@ def _bagian_leave_one_out(baris):
     )
 
 
-def _bagian_skenario(baris):
+def _bagian_skenario(baris: Sequence[dict[str, Any]]) -> str:
     rows = [
         (
             item["skenario"],
@@ -126,9 +137,9 @@ def _bagian_skenario(baris):
     )
 
 
-def _rinci_skenario():
+def _rinci_skenario() -> list[str]:
     """Rincian hitung Jaccard top-3 untuk tiap skenario (validasi manual)."""
-    bagian = []
+    bagian: list[str] = []
     for skenario in SKENARIO_UJI:
         hasil = cbr_engine.retrieve(skenario["gejala"], CASE_BASE_AWAL, "jaccard")
         bagian.append(f"### {skenario['id']} — {skenario['deskripsi']}")
@@ -145,7 +156,9 @@ def _rinci_skenario():
     return bagian
 
 
-def _susun_dokumen(ringkasan, rinci):
+def _susun_dokumen(
+    ringkasan: Sequence[dict[str, Any]], rinci: Sequence[str]
+) -> str:
     baris = [
         "# Hasil Evaluasi",
         "",
@@ -215,11 +228,11 @@ def _susun_dokumen(ringkasan, rinci):
     return "\n".join(baris)
 
 
-def main():
-    if hasattr(sys.stdout, "reconfigure"):
+def main() -> None:
+    if isinstance(sys.stdout, io.TextIOWrapper):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-    ringkasan = []
+    ringkasan: list[dict[str, Any]] = []
     for mode, label in PASANGAN_MODE:
         loo = uji_leave_one_out(mode)
         skenario = uji_skenario(mode)

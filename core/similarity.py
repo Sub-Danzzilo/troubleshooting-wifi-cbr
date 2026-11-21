@@ -8,20 +8,25 @@ Catatan penting untuk validasi manual: pasangan gejala yang sama-sama False
 nama gejala. "Gejala tidak dipilih" berarti "tidak dilaporkan", bukan cocok.
 """
 
+from collections.abc import Iterable, Mapping
+from typing import Any
+
 from core.case_base import BOBOT_GEJALA, LABEL_GEJALA
 
 
-def _sebagai_set(gejala):
+def _sebagai_set(gejala: Iterable[str] | None) -> set[str]:
     """Ubah list/tuple/set nama gejala menjadi set (None dianggap kosong)."""
     return set(gejala or [])
 
 
-def _bobot_gejala(nama, bobot):
+def _bobot_gejala(nama: str, bobot: Mapping[str, float]) -> float:
     """Bobot satu gejala; gejala yang tidak terdaftar dianggap 1.0."""
     return float(bobot.get(nama, 1.0))
 
 
-def jaccard_similarity(himpunan_a, himpunan_b):
+def jaccard_similarity(
+    himpunan_a: Iterable[str] | None, himpunan_b: Iterable[str] | None
+) -> float:
     """Similarity Jaccard: |A ∩ B| / |A ∪ B|.
 
     Parameter:
@@ -36,7 +41,11 @@ def jaccard_similarity(himpunan_a, himpunan_b):
     return len(a & b) / len(gabungan)
 
 
-def weighted_jaccard_similarity(himpunan_a, himpunan_b, bobot=None):
+def weighted_jaccard_similarity(
+    himpunan_a: Iterable[str] | None,
+    himpunan_b: Iterable[str] | None,
+    bobot: Mapping[str, float] | None = None,
+) -> float:
     """Weighted Jaccard: Σ bobot(A ∩ B) / Σ bobot(A ∪ B).
 
     Parameter:
@@ -58,7 +67,9 @@ def weighted_jaccard_similarity(himpunan_a, himpunan_b, bobot=None):
     return jumlah_irisan / jumlah_gabungan
 
 
-def bandingkan_gejala(gejala_input, gejala_kasus):
+def bandingkan_gejala(
+    gejala_input: Iterable[str] | None, gejala_kasus: Iterable[str] | None
+) -> dict[str, list[str]]:
     """Bandingkan dua himpunan gejala untuk penjelasan transparan.
 
     Mengembalikan dict berisi tiga kelompok (diurutkan alfabetis):
@@ -75,7 +86,12 @@ def bandingkan_gejala(gejala_input, gejala_kasus):
     }
 
 
-def hitung_rinci(gejala_input, gejala_kasus, mode="jaccard", bobot=None):
+def hitung_rinci(
+    gejala_input: Iterable[str] | None,
+    gejala_kasus: Iterable[str] | None,
+    mode: str = "jaccard",
+    bobot: Mapping[str, float] | None = None,
+) -> dict[str, Any]:
     """Kembalikan seluruh langkah perhitungan untuk validasi manual.
 
     Parameter:
@@ -97,7 +113,7 @@ def hitung_rinci(gejala_input, gejala_kasus, mode="jaccard", bobot=None):
     irisan = a & b
     gabungan = a | b
 
-    rinci = {
+    rinci: dict[str, Any] = {
         "mode": mode,
         "himpunan_a": sorted(a),
         "himpunan_b": sorted(b),

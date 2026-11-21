@@ -6,12 +6,15 @@ dari kemiripan terhadap kasus lama.
 """
 
 import copy
+from collections.abc import Iterable
+from typing import Any
 
 from core.case_base import (
     AMBANG_DUPLIKAT,
     AMBANG_MIN_SIMILARITY,
     BOBOT_GEJALA,
     TOP_K,
+    Kasus,
 )
 from core.similarity import (
     bandingkan_gejala,
@@ -20,14 +23,23 @@ from core.similarity import (
 )
 
 
-def _skor_similarity(gejala_input, gejala_kasus, mode_similarity):
+def _skor_similarity(
+    gejala_input: Iterable[str],
+    gejala_kasus: Iterable[str],
+    mode_similarity: str,
+) -> float:
     """Hitung skor dengan fungsi similarity yang sama untuk semua tahap."""
     if mode_similarity == "weighted":
         return weighted_jaccard_similarity(gejala_input, gejala_kasus, BOBOT_GEJALA)
     return jaccard_similarity(gejala_input, gejala_kasus)
 
 
-def retrieve(gejala_input, case_base, mode_similarity="jaccard", top_k=None):
+def retrieve(
+    gejala_input: Iterable[str],
+    case_base: list[Kasus],
+    mode_similarity: str = "jaccard",
+    top_k: int | None = None,
+) -> dict[str, Any]:
     """Tahap RETRIEVE: cari kasus lama yang paling mirip dengan keluhan baru.
 
     Semua kasus dihitung skornya (kecuali status "belum_terselesaikan"), lalu
@@ -43,7 +55,7 @@ def retrieve(gejala_input, case_base, mode_similarity="jaccard", top_k=None):
         pesan           : keterangan singkat untuk UI
     """
     top_k = TOP_K if top_k is None else top_k
-    kandidat = []
+    kandidat: list[dict[str, Any]] = []
     for kasus in case_base:
         if kasus.get("status") == "belum_terselesaikan":
             continue
@@ -79,7 +91,7 @@ def retrieve(gejala_input, case_base, mode_similarity="jaccard", top_k=None):
     }
 
 
-def reuse(kasus_terpilih, gejala_input):
+def reuse(kasus_terpilih: Kasus, gejala_input: Iterable[str]) -> dict[str, Any]:
     """Tahap REUSE: pakai solusi kasus terpilih apa adanya.
 
     Tidak ada adaptasi if-then. Solusi disalin utuh, dan selisih gejala
@@ -94,7 +106,12 @@ def reuse(kasus_terpilih, gejala_input):
     }
 
 
-def revise(hasil_retrieve, indeks_sekarang, berhasil, solusi_baru=None):
+def revise(
+    hasil_retrieve: dict[str, Any],
+    indeks_sekarang: int,
+    berhasil: bool,
+    solusi_baru: str | None = None,
+) -> dict[str, Any]:
     """Tahap REVISE: tangani umpan balik pengguna terhadap solusi.
 
     Parameter:
@@ -155,7 +172,7 @@ def revise(hasil_retrieve, indeks_sekarang, berhasil, solusi_baru=None):
     }
 
 
-def buat_id_kasus_baru(case_base):
+def buat_id_kasus_baru(case_base: Iterable[Kasus]) -> str:
     """Buat id kasus berikutnya (K16, K17, ...) dari id yang sudah ada."""
     nomor_tertinggi = 0
     for kasus in case_base:
@@ -165,7 +182,13 @@ def buat_id_kasus_baru(case_base):
     return f"K{nomor_tertinggi + 1:02d}"
 
 
-def retain(gejala_input, kasus_acuan, solusi, status, case_base):
+def retain(
+    gejala_input: Iterable[str] | None,
+    kasus_acuan: Kasus | None,
+    solusi: Iterable[str],
+    status: str,
+    case_base: list[Kasus],
+) -> tuple[list[Kasus], dict[str, Any]]:
     """Tahap RETAIN: simpan pengalaman baru ke basis kasus.
 
     Bila kasus baru identik dengan kasus lama (similarity >= AMBANG_DUPLIKAT),
@@ -184,7 +207,7 @@ def retain(gejala_input, kasus_acuan, solusi, status, case_base):
     if not gejala_baru:
         raise ValueError("Kasus baru harus memiliki minimal satu gejala.")
 
-    kasus_duplikat = None
+    kasus_duplikat: Kasus | None = None
     skor_duplikat = 0.0
     for kasus in case_base_baru:
         # Kasus yang belum terselesaikan tidak boleh "menelan" kasus baru yang
@@ -220,7 +243,7 @@ def retain(gejala_input, kasus_acuan, solusi, status, case_base):
         nama_kasus = "Kasus baru dari pengguna"
         kategori_solusi = "baru"
 
-    kasus_baru = {
+    kasus_baru: Kasus = {
         "id": id_baru,
         "nama_kasus": nama_kasus,
         "gejala": gejala_baru,

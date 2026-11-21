@@ -7,11 +7,12 @@ salinan (copy) sehingga kasus awal tetap utuh selama runtime.
 import copy
 import json
 import os
+from typing import cast
 
-from core.case_base import CASE_BASE_AWAL, PATH_CASE_BASE_JSON
+from core.case_base import CASE_BASE_AWAL, PATH_CASE_BASE_JSON, Kasus
 
 
-def simpan_case_base(case_base):
+def simpan_case_base(case_base: list[Kasus]) -> None:
     """Tulis case base ke JSON (UTF-8, indent 2) agar teks Indonesia terbaca."""
     folder = os.path.dirname(PATH_CASE_BASE_JSON)
     if folder:
@@ -21,14 +22,14 @@ def simpan_case_base(case_base):
         berkas.write("\n")
 
 
-def reset_case_base():
+def reset_case_base() -> list[Kasus]:
     """Timpa JSON dengan salinan CASE_BASE_AWAL, lalu kembalikan salinan itu."""
     case_base = copy.deepcopy(CASE_BASE_AWAL)
     simpan_case_base(case_base)
     return case_base
 
 
-def muat_case_base():
+def muat_case_base() -> list[Kasus]:
     """Muat case base dari JSON.
 
     Bila berkas tidak ada atau rusak, case base dibuat ulang dari
@@ -38,7 +39,7 @@ def muat_case_base():
         with open(PATH_CASE_BASE_JSON, "r", encoding="utf-8") as berkas:
             case_base = json.load(berkas)
         if isinstance(case_base, list) and case_base:
-            return case_base
+            return cast(list[Kasus], case_base)
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):
         pass
     return reset_case_base()

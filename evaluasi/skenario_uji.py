@@ -4,7 +4,19 @@ Setiap skenario memakai kombinasi gejala yang berbeda dari kasus awal, tetapi
 kategori yang diharapkan tetap jelas. Komentar menjelaskan alasan ground truth.
 """
 
-SKENARIO_UJI = [
+from typing import TypedDict
+
+
+class SkenarioUji(TypedDict):
+    """Struktur satu skenario uji baru beserta kategori yang diharapkan."""
+
+    id: str
+    deskripsi: str
+    gejala: list[str]
+    kategori_diharapkan: str
+
+
+SKENARIO_UJI: list[SkenarioUji] = [
     {
         "id": "S1",
         "deskripsi": "Kabel fiber terganggu, semua perangkat tidak bisa internet",
