@@ -39,6 +39,6 @@ def muat_case_base():
             case_base = json.load(berkas)
         if isinstance(case_base, list) and case_base:
             return case_base
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
         pass
     return reset_case_base()

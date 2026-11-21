@@ -7,23 +7,13 @@ from core.case_base import BOBOT_GEJALA, TOP_K
 from core.similarity import hitung_rinci
 from ui.komponen import (
     format_persen,
+    kembali_ke_input,
+    nama_mode_similarity,
     tampilkan_langkah_solusi,
     tampilkan_penjelasan_gejala,
     tampilkan_perhitungan_rinci,
     tampilkan_tabel_kasus,
 )
-
-
-def _kembali_ke_input():
-    """Kembali ke halaman input dan bersihkan form pada rerun berikutnya."""
-    st.session_state["reset_form"] = True
-    st.session_state["halaman"] = "input"
-    st.session_state["gejala_input"] = []
-    st.session_state["hasil_retrieve"] = None
-    st.session_state["indeks_kandidat"] = 0
-    st.session_state["info_retain"] = None
-    st.session_state["status_feedback"] = "belum"
-    st.rerun()
 
 
 def _simpan_retain(gejala_input, kasus_acuan, solusi):
@@ -42,16 +32,29 @@ def _simpan_retain(gejala_input, kasus_acuan, solusi):
     st.rerun()
 
 
+def _terapkan_revise(hasil, indeks, gejala_input, berhasil, solusi_baru=None):
+    """Jalankan tahap Revise, lalu Retain bila keputusannya menyimpan kasus."""
+    keputusan = cbr_engine.revise(hasil, indeks, berhasil, solusi_baru=solusi_baru)
+    if keputusan["keputusan"] == "retain":
+        kasus_acuan = keputusan["kasus_terpilih"]
+        _simpan_retain(gejala_input, kasus_acuan, kasus_acuan["solusi"])
+    elif keputusan["keputusan"] == "solusi_baru":
+        _simpan_retain(gejala_input, None, [keputusan["solusi_baru"]])
+
+
 def render():
     st.title("Hasil Diagnosis")
     gejala_input = st.session_state.get("gejala_input") or []
     if not gejala_input:
         st.info("Belum ada diagnosis. Silakan isi gejala terlebih dahulu.")
         if st.button("⬅️ Kembali ke halaman input"):
-            _kembali_ke_input()
+            kembali_ke_input()
         return
 
     mode = st.session_state.get("mode_similarity", "jaccard")
+    if st.session_state.get("mode_hasil") not in (None, mode):
+        st.session_state["indeks_kandidat"] = 0
+    st.session_state["mode_hasil"] = mode
     hasil = cbr_engine.retrieve(gejala_input, st.session_state["case_base"], mode)
     st.session_state["hasil_retrieve"] = hasil
     kandidat = hasil["kandidat"]
@@ -64,9 +67,8 @@ def render():
     indeks = min(indeks, len(kandidat) - 1)
     st.session_state["indeks_kandidat"] = indeks
 
-    nama_mode = "Weighted Jaccard" if mode == "weighted" else "Jaccard"
     st.caption(
-        f"Mode similarity: **{nama_mode}** · Ambang minimum: "
+        f"Mode similarity: **{nama_mode_similarity(mode)}** · Ambang minimum: "
         f"{format_persen(hasil['ambang_min'])} · Gejala terpilih: {len(gejala_input)}"
     )
 
@@ -120,15 +122,6 @@ def render():
 
     st.markdown("**Penjelasan gejala**")
     tampilkan_penjelasan_gejala(reuse["penjelasan"])
-    if reuse["perlu_diverifikasi"]:
-        with st.expander("Hal yang perlu diverifikasi"):
-            st.write(
-                "Gejala berikut tidak sepenuhnya sama dengan kasus rujukan. Pastikan "
-                "kondisinya memang seperti ini sebelum menjalankan solusi."
-            )
-            for item in reuse["perlu_diverifikasi"]:
-                keterangan = "hanya ada pada keluhan Anda" if item["jenis"] == "hanya_input" else "hanya ada pada kasus"
-                st.markdown(f"- {item['label']} (`{item['gejala']}`) — {keterangan}")
 
     st.divider()
     st.subheader("Umpan Balik (Revise)")
@@ -150,7 +143,7 @@ def render():
 
         if jawaban == "Ya, berhasil":
             if st.button("💾 Simpan ke Basis Kasus (Retain)", type="primary"):
-                _simpan_retain(gejala_input, kasus, kasus["solusi"])
+                _terapkan_revise(hasil, indeks, gejala_input, berhasil=True)
 
         elif jawaban == "Tidak berhasil":
             hasil_revise = cbr_engine.revise(hasil, indeks, False)
@@ -171,8 +164,14 @@ def render():
                     if not teks_solusi.strip():
                         st.error("Tuliskan solusi terlebih dahulu sebelum menyimpan.")
                     else:
-                        _simpan_retain(gejala_input, None, [teks_solusi.strip()])
+                        _terapkan_revise(
+                            hasil,
+                            indeks,
+                            gejala_input,
+                            berhasil=False,
+                            solusi_baru=teks_solusi.strip(),
+                        )
 
     st.divider()
     if st.button("🔄 Diagnosis Baru"):
-        _kembali_ke_input()
+        kembali_ke_input()

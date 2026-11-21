@@ -1,6 +1,6 @@
-"""Komponen tampilan yang dipakai lebih dari satu halaman.
+"""Komponen tampilan dan navigasi yang dipakai lebih dari satu halaman.
 
-Hanya urusan tampilan; tidak ada perhitungan similarity di sini.
+Hanya urusan tampilan/state UI; tidak ada perhitungan similarity di sini.
 """
 
 import streamlit as st
@@ -16,6 +16,23 @@ def format_persen(skor):
 def label_gejala(nama):
     """Label Bahasa Indonesia untuk sebuah nama gejala."""
     return LABEL_GEJALA.get(nama, nama)
+
+
+def nama_mode_similarity(mode):
+    """Nama tampilan mode similarity."""
+    return "Weighted Jaccard" if mode == "weighted" else "Jaccard biasa"
+
+
+def kembali_ke_input():
+    """Kembali ke halaman input dan bersihkan form pada rerun berikutnya."""
+    st.session_state["reset_form"] = True
+    st.session_state["halaman"] = "input"
+    st.session_state["gejala_input"] = []
+    st.session_state["hasil_retrieve"] = None
+    st.session_state["indeks_kandidat"] = 0
+    st.session_state["info_retain"] = None
+    st.session_state["status_feedback"] = "belum"
+    st.rerun()
 
 
 def _daftar_gejala(daftar, pesan_kosong):
@@ -40,7 +57,7 @@ def _himpunan(daftar):
 
 
 def tampilkan_tabel_kasus(daftar_kandidat):
-    """Tabel kasus: ID, nama, similarity, kategori, dan ringkasan solusi."""
+    """Tabel kasus: ID, nama, similarity (desimal + persen), kategori, ringkasan."""
     baris = []
     for urutan, kandidat in enumerate(daftar_kandidat, start=1):
         kasus = kandidat["kasus"]
@@ -52,8 +69,7 @@ def tampilkan_tabel_kasus(daftar_kandidat):
                 "#": urutan,
                 "ID": kasus["id"],
                 "Nama Kasus": kasus["nama_kasus"],
-                "Similarity": f"{kandidat['skor']:.4f}",
-                "Persen": format_persen(kandidat["skor"]),
+                "Similarity": f"{kandidat['skor']:.4f} ({format_persen(kandidat['skor'])})",
                 "Kategori": kasus["kategori_solusi"],
                 "Ringkasan Solusi": langkah_pertama,
             }

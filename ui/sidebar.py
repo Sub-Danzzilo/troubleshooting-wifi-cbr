@@ -3,6 +3,7 @@
 import streamlit as st
 
 from core import storage
+from ui.komponen import kembali_ke_input, nama_mode_similarity
 
 
 def _tabel_semua_kasus(case_base):
@@ -34,7 +35,7 @@ def render():
         st.radio(
             "Metode",
             ["jaccard", "weighted"],
-            format_func=lambda mode: "Weighted Jaccard" if mode == "weighted" else "Jaccard biasa",
+            format_func=nama_mode_similarity,
             key="mode_similarity",
         )
         st.caption("Mengubah mode langsung menghitung ulang skor pada halaman hasil.")
@@ -53,11 +54,4 @@ def render():
             yakin = st.checkbox("Saya yakin ingin reset", key="konfirmasi_reset")
             if st.button("Reset Case Base", disabled=not yakin):
                 st.session_state["case_base"] = storage.reset_case_base()
-                st.session_state["reset_form"] = True
-                st.session_state["halaman"] = "input"
-                st.session_state["gejala_input"] = []
-                st.session_state["hasil_retrieve"] = None
-                st.session_state["indeks_kandidat"] = 0
-                st.session_state["info_retain"] = None
-                st.session_state["status_feedback"] = "belum"
-                st.rerun()
+                kembali_ke_input()

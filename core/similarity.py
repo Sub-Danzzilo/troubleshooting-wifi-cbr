@@ -16,6 +16,11 @@ def _sebagai_set(gejala):
     return set(gejala or [])
 
 
+def _bobot_gejala(nama, bobot):
+    """Bobot satu gejala; gejala yang tidak terdaftar dianggap 1.0."""
+    return float(bobot.get(nama, 1.0))
+
+
 def jaccard_similarity(himpunan_a, himpunan_b):
     """Similarity Jaccard: |A ∩ B| / |A ∪ B|.
 
@@ -48,11 +53,8 @@ def weighted_jaccard_similarity(himpunan_a, himpunan_b, bobot=None):
     if not gabungan:
         return 0.0
 
-    def bobot_gejala(nama):
-        return float(bobot.get(nama, 1.0))
-
-    jumlah_irisan = sum(bobot_gejala(nama) for nama in a & b)
-    jumlah_gabungan = sum(bobot_gejala(nama) for nama in gabungan)
+    jumlah_irisan = sum(_bobot_gejala(nama, bobot) for nama in a & b)
+    jumlah_gabungan = sum(_bobot_gejala(nama, bobot) for nama in gabungan)
     return jumlah_irisan / jumlah_gabungan
 
 
@@ -117,15 +119,12 @@ def hitung_rinci(gejala_input, gejala_kasus, mode="jaccard", bobot=None):
         rinci["hasil"] = jaccard_similarity(a, b)
         rinci["rumus"] = "|A ∩ B| / |A ∪ B|"
     else:
-        def bobot_gejala(nama):
-            return float(bobot.get(nama, 1.0))
-
         rinci["bobot_irisan"] = [
-            {"gejala": nama, "label": LABEL_GEJALA.get(nama, nama), "bobot": bobot_gejala(nama)}
+            {"gejala": nama, "label": LABEL_GEJALA.get(nama, nama), "bobot": _bobot_gejala(nama, bobot)}
             for nama in sorted(irisan)
         ]
         rinci["bobot_gabungan"] = [
-            {"gejala": nama, "label": LABEL_GEJALA.get(nama, nama), "bobot": bobot_gejala(nama)}
+            {"gejala": nama, "label": LABEL_GEJALA.get(nama, nama), "bobot": _bobot_gejala(nama, bobot)}
             for nama in sorted(gabungan)
         ]
         rinci["jumlah_bobot_irisan"] = sum(item["bobot"] for item in rinci["bobot_irisan"])

@@ -112,3 +112,30 @@ def test_storage_roundtrip(tmp_path, monkeypatch):
     dimuat = storage.muat_case_base()
     assert len(dimuat) == len(case_base)
     assert dimuat[0]["id"] == "K01"
+
+
+def test_retain_tidak_menghitung_kasus_belum_terselesaikan_sebagai_duplikat():
+    case_base = copy.deepcopy(CASE_BASE_AWAL)
+    kasus_k01 = kasus("K01", case_base)
+    kasus_k01["status"] = "belum_terselesaikan"
+
+    case_base_baru, info = cbr_engine.retain(
+        kasus_k01["gejala"], kasus_k01, kasus_k01["solusi"], "berhasil", case_base
+    )
+
+    assert info["aksi"] == "ditambahkan"
+    assert len(case_base_baru) == len(case_base) + 1
+    assert kasus_k01["jumlah_dipakai"] == 1
+
+
+def test_revise_mengamankan_indeks_di_luar_batas():
+    hasil = cbr_engine.retrieve(kasus("K01")["gejala"], CASE_BASE_AWAL)
+    revisi = cbr_engine.revise(hasil, 999, True)
+    assert revisi["keputusan"] == "retain"
+    assert revisi["kasus_terpilih"]["id"] == hasil["kandidat"][-1]["kasus"]["id"]
+
+
+def test_revise_tanpa_kandidat():
+    hasil = {"kandidat": []}
+    assert cbr_engine.revise(hasil, 0, True)["keputusan"] == "tidak_ada_kandidat"
+    assert cbr_engine.revise(hasil, 0, False)["keputusan"] == "tidak_ada_kandidat"

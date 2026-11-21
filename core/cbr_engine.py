@@ -11,7 +11,6 @@ from core.case_base import (
     AMBANG_DUPLIKAT,
     AMBANG_MIN_SIMILARITY,
     BOBOT_GEJALA,
-    LABEL_GEJALA,
     TOP_K,
 )
 from core.similarity import (
@@ -83,26 +82,15 @@ def retrieve(gejala_input, case_base, mode_similarity="jaccard", top_k=None):
 def reuse(kasus_terpilih, gejala_input):
     """Tahap REUSE: pakai solusi kasus terpilih apa adanya.
 
-    Tidak ada adaptasi if-then. Solusi disalin utuh, lalu selisih gejala
-    dilampirkan sebagai catatan "hal yang perlu diverifikasi" agar pengguna tahu
-    bagian mana dari keluhan yang belum tercakup kasus rujukan.
+    Tidak ada adaptasi if-then. Solusi disalin utuh, dan selisih gejala
+    dikembalikan lewat "penjelasan" (cocok / hanya input / hanya kasus) sebagai
+    hal yang perlu diverifikasi pengguna.
     """
-    penjelasan = bandingkan_gejala(gejala_input, kasus_terpilih["gejala"])
-    perlu_diverifikasi = [
-        {"jenis": "hanya_input", "gejala": nama, "label": LABEL_GEJALA.get(nama, nama)}
-        for nama in penjelasan["hanya_input"]
-    ] + [
-        {"jenis": "hanya_kasus", "gejala": nama, "label": LABEL_GEJALA.get(nama, nama)}
-        for nama in penjelasan["hanya_kasus"]
-    ]
-
     return {
         "kasus_id": kasus_terpilih["id"],
-        "nama_kasus": kasus_terpilih["nama_kasus"],
         "kategori_solusi": kasus_terpilih["kategori_solusi"],
         "solusi": list(kasus_terpilih["solusi"]),
-        "penjelasan": penjelasan,
-        "perlu_diverifikasi": perlu_diverifikasi,
+        "penjelasan": bandingkan_gejala(gejala_input, kasus_terpilih["gejala"]),
     }
 
 
@@ -122,14 +110,22 @@ def revise(hasil_retrieve, indeks_sekarang, berhasil, solusi_baru=None):
         "tidak_ada_kandidat"   : semua kandidat habis dan tidak ada solusi baru.
     """
     kandidat = hasil_retrieve.get("kandidat", [])
-    indeks_sekarang = max(0, int(indeks_sekarang))
+    if not kandidat:
+        return {
+            "keputusan": "tidak_ada_kandidat",
+            "indeks_kandidat": 0,
+            "kasus_terpilih": None,
+            "pesan": "Belum ada kandidat solusi untuk dinilai.",
+        }
+
+    # Indeks dari session_state bisa tertinggal setelah case base berubah.
+    indeks_sekarang = min(max(0, int(indeks_sekarang)), len(kandidat) - 1)
 
     if berhasil:
-        kasus = kandidat[indeks_sekarang]["kasus"] if kandidat else None
         return {
             "keputusan": "retain",
             "indeks_kandidat": indeks_sekarang,
-            "kasus_terpilih": kasus,
+            "kasus_terpilih": kandidat[indeks_sekarang]["kasus"],
             "pesan": "Solusi berhasil; kasus siap disimpan ke basis kasus.",
         }
 
@@ -191,6 +187,10 @@ def retain(gejala_input, kasus_acuan, solusi, status, case_base):
     kasus_duplikat = None
     skor_duplikat = 0.0
     for kasus in case_base_baru:
+        # Kasus yang belum terselesaikan tidak boleh "menelan" kasus baru yang
+        # gejalanya sama, karena kasus itu tidak dipakai saat retrieve.
+        if kasus.get("status") == "belum_terselesaikan":
+            continue
         skor = jaccard_similarity(gejala_baru, kasus["gejala"])
         if skor > skor_duplikat:
             skor_duplikat = skor

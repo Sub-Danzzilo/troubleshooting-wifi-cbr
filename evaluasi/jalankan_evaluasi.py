@@ -37,26 +37,33 @@ def _akurasi(baris, kunci):
     return sum(1 for item in baris if item[kunci]) / len(baris)
 
 
+def _uji_kasus(gejala, kategori_harapan, case_base, mode):
+    """Ringkas hasil retrieve satu kasus uji: top-1, skor, dan status benar."""
+    hasil = cbr_engine.retrieve(gejala, case_base, mode)
+    top = hasil["kandidat"][:3]
+    kategori_top1 = top[0]["kasus"]["kategori_solusi"] if top else "-"
+    return {
+        "top1": top[0]["kasus"]["id"] if top else "-",
+        "skor": top[0]["skor"] if top else 0.0,
+        "kategori_top1": kategori_top1,
+        "benar_top1": kategori_top1 == kategori_harapan,
+        "benar_top3": any(
+            item["kasus"]["kategori_solusi"] == kategori_harapan for item in top
+        ),
+    }
+
+
 def uji_leave_one_out(mode):
     """Tiap kasus diuji terhadap 14 kasus lain (dirinya dikeluarkan)."""
     baris = []
     for kasus_uji in CASE_BASE_AWAL:
         basis = [kasus for kasus in CASE_BASE_AWAL if kasus["id"] != kasus_uji["id"]]
-        hasil = cbr_engine.retrieve(kasus_uji["gejala"], basis, mode)
-        top = hasil["kandidat"][:3]
-        kategori_top1 = top[0]["kasus"]["kategori_solusi"] if top else "-"
+        ringkas = _uji_kasus(kasus_uji["gejala"], kasus_uji["kategori_solusi"], basis, mode)
         baris.append(
             {
                 "kasus_uji": kasus_uji["id"],
                 "kategori": kasus_uji["kategori_solusi"],
-                "top1": top[0]["kasus"]["id"] if top else "-",
-                "skor": top[0]["skor"] if top else 0.0,
-                "kategori_top1": kategori_top1,
-                "benar_top1": kategori_top1 == kasus_uji["kategori_solusi"],
-                "benar_top3": any(
-                    item["kasus"]["kategori_solusi"] == kasus_uji["kategori_solusi"]
-                    for item in top
-                ),
+                **ringkas,
             }
         )
     return baris
@@ -66,22 +73,15 @@ def uji_skenario(mode):
     """Lima skenario baru dicocokkan ke seluruh CASE_BASE_AWAL."""
     baris = []
     for skenario in SKENARIO_UJI:
-        hasil = cbr_engine.retrieve(skenario["gejala"], CASE_BASE_AWAL, mode)
-        top = hasil["kandidat"][:3]
-        kategori_top1 = top[0]["kasus"]["kategori_solusi"] if top else "-"
+        ringkas = _uji_kasus(
+            skenario["gejala"], skenario["kategori_diharapkan"], CASE_BASE_AWAL, mode
+        )
         baris.append(
             {
                 "skenario": skenario["id"],
                 "deskripsi": skenario["deskripsi"],
                 "kategori": skenario["kategori_diharapkan"],
-                "top1": top[0]["kasus"]["id"] if top else "-",
-                "skor": top[0]["skor"] if top else 0.0,
-                "kategori_top1": kategori_top1,
-                "benar_top1": kategori_top1 == skenario["kategori_diharapkan"],
-                "benar_top3": any(
-                    item["kasus"]["kategori_solusi"] == skenario["kategori_diharapkan"]
-                    for item in top
-                ),
+                **ringkas,
             }
         )
     return baris

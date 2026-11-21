@@ -47,7 +47,7 @@ ui/
 evaluasi/
   skenario_uji.py           5 skenario uji baru
   jalankan_evaluasi.py      Leave-one-out + uji skenario, Jaccard vs Weighted
-tests/                      pytest (similarity + penjaga larangan rule-based)
+tests/                      pytest (similarity, siklus 4R, penjaga larangan rule-based)
 docs/                       Catatan metodologi, hasil evaluasi, validasi manual
 data/                       case_base.json (dibuat otomatis, di-gitignore)
 ```

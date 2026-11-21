@@ -97,8 +97,8 @@ Analisis singkat:
 - Kesalahan Weighted: K07 terbaca K13, serta pasangan K13/K15 saling tertukar. Weighted
   memperbaiki K01 karena `los_merah` berbobot 2,0.
 - K13 (`masalah_perangkat_klien`) dan K15 (`sinyal_lemah_interferensi`) memiliki pola gejala
-  yang hampir sama; pembedanya hanya `sinyal_lemah`. Pada case base kecil, selisih satu gejala
-  langsung mengubah peringkat.
+  yang hampir sama; pembedanya terutama `sinyal_lemah` (K15 juga memuat `wlan_nyala`). Pada
+  case base kecil, selisih satu-dua gejala langsung mengubah peringkat.
 - Lima skenario baru semuanya benar karena dibuat dari pola gejala yang mirip dengan kasus awal.
   Hasil ini menunjukkan konsistensi case base, bukan jaminan performa pada keluhan nyata.
 
@@ -154,7 +154,7 @@ Keterbatasan: kualitas hasil bergantung pada cakupan case base dan pemilihan bob
 - Similarity per-atribut (attribute-value) dengan local similarity per lampu
 - Bobot dari pakar atau hasil optimasi dari data
 - Indeksasi/pengelompokan case base untuk retrieval lebih cepat
-- Menambah gejala, misalnya `connect_tapi_tanpa_internet` per perangkat
+- Menambah gejala yang lebih rinci, misalnya jumlah perangkat terhubung atau tingkat kebisingan channel
 - Menambah kasus awal agar pasangan kategori yang mirip (K13/K15) lebih mudah dibedakan
 
 ## Tim
