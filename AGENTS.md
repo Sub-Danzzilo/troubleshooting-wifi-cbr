@@ -39,6 +39,7 @@ dan tanyakan**, jangan dikerjakan diam-diam.
 ```text
 app.py                      Entry point + router halaman (tanpa logika CBR)
 pyproject.toml              Konfigurasi mypy dan Pyright/Pylance
+.markdownlint.json          Aturan markdownlint proyek
 core/
   case_base.py              Data & parameter: DAFTAR_GEJALA, PILIHAN_LAMPU, BOBOT_GEJALA,
                             ambang, CASE_BASE_AWAL (15 kasus)
@@ -55,7 +56,7 @@ evaluasi/
   skenario_uji.py           5 skenario uji baru
   jalankan_evaluasi.py      Leave-one-out + uji skenario, Jaccard vs Weighted
 tests/                      pytest (similarity, siklus 4R, penjaga larangan rule-based)
-docs/                       Catatan metodologi, hasil evaluasi, validasi manual
+docs/                       Metodologi, evaluasi, validasi & panduan manual
 data/                       case_base.json (dibuat otomatis, di-gitignore)
 ```
 
@@ -131,6 +132,41 @@ lalu membandingkannya dengan output aplikasi. Karena itu:
   pihak ketiga), tulis kode error yang spesifik dan jelaskan alasannya di
   komentar.
 
+## Pemeriksaan Markdown (wajib)
+
+- Setiap kali menulis atau mengubah berkas `.md`, jalankan markdownlint
+  **sebelum** pekerjaan dianggap selesai.
+- Target harus disebutkan secara spesifik: hanya berkas yang diubah, atau
+  seluruh berkas markdown proyek.
+
+  ```bash
+  # hanya berkas yang diubah
+  npx --yes markdownlint-cli2 docs/panduan_pengujian_manual.md
+
+  # seluruh berkas markdown proyek
+  npx --yes markdownlint-cli2 README.md AGENTS.md \
+    "docs/*.md" "catatan-laporan/*.md"
+  ```
+
+  Bila `npx` tidak tersedia, ganti dengan `bunx markdownlint-cli2` dan target
+  yang sama.
+- Jangan memakai pola `**/*.md` tanpa pengecualian karena ikut memindai
+  `.venv/` dan `node_modules/`.
+- Patokan lulus: **0 warning**. Konfigurasi proyek ada di `.markdownlint.json`
+  (batas 80 karakter; baris tabel dikecualikan karena isi sel tidak bisa
+  dibungkus).
+- Urutan perbaikan yang dianjurkan: benahi isinya dulu (bungkus teks ke 80
+  kolom, seragamkan gaya tabel, beri bahasa pada blok kode), jangan langsung
+  mematikan aturan.
+- Bila memang tidak ada jalan lain (contoh: tabel panjang yang tidak mungkin
+  dipecah tanpa merusak isi), warning boleh diabaikan. Pilih salah satu:
+  1. longgarkan aturan di `.markdownlint.json` dan tulis alasannya, atau
+  2. tandai baris terkait dengan `<!-- markdownlint-disable-line MD0xx -->`
+     disertai alasan.
+
+  Jangan mematikan seluruh berkas dengan `<!-- markdownlint-disable -->`
+  tanpa penjelasan.
+
 ## Perintah
 
 ```bash
@@ -140,13 +176,17 @@ python -m pytest                        # jalankan uji (dari root proyek)
 python -m mypy                          # cek tipe dengan mypy (wajib)
 python -m pyright                       # alternatif cek tipe, konfigurasi sama
 python -m evaluasi.jalankan_evaluasi    # evaluasi akurasi retrieval
+
+# cek markdown (wajib setelah menulis/mengubah berkas .md)
+npx --yes markdownlint-cli2 README.md AGENTS.md \
+  "docs/*.md" "catatan-laporan/*.md"
 ```
 
 ## Commit dan Push
 
-- Setiap kali selesai mengerjakan sesuatu, agent WAJIB menuliskan usulan
-  **commit message dalam Bahasa Inggris** di akhir balasan chat (bukan
-  dijalankan sendiri).
+- Setiap balasan yang menambah, mengubah, atau menghapus berkas WAJIB
+  diakhiri usulan **commit message dalam Bahasa Inggris** (bukan dijalankan
+  sendiri), beserta daftar berkas yang masuk commit tersebut.
 - Format yang dipakai: Conventional Commits, judul singkat satu baris, lalu body
   secukupnya bila perubahan perlu dijelaskan.
 - Agent TIDAK boleh menjalankan `git commit`, `git push`, atau mengubah
@@ -168,6 +208,8 @@ python -m evaluasi.jalankan_evaluasi    # evaluasi akurasi retrieval
 - [ ] `tests/test_larangan_rule_based.py` lulus.
 - [ ] Evaluasi dijalankan dan `docs/hasil_evaluasi.md` terisi.
 - [ ] README dan `docs/catatan_metodologi.md` terisi (bukan sisa instruksi).
+- [ ] `markdownlint` bersih (0 warning) untuk setiap berkas `.md` yang diubah.
+- [ ] Usulan commit message beserta daftar berkas disertakan di akhir balasan.
 
 ## Hal yang Tidak Boleh Dilakukan Agent
 
@@ -178,3 +220,4 @@ python -m evaluasi.jalankan_evaluasi    # evaluasi akurasi retrieval
   memang perlu.
 - Mematikan atau melunakkan pemeriksaan tipe (mypy/Pyright) hanya agar kode
   dianggap lulus.
+- Mematikan aturan markdownlint untuk seluruh berkas tanpa alasan yang jelas.
