@@ -8,6 +8,7 @@ tidak berubah karena kasus hasil retain.
 
 import io
 import sys
+import textwrap
 from collections.abc import Iterable, Sequence
 from datetime import date
 from pathlib import Path
@@ -35,6 +36,21 @@ def _tabel(header: Sequence[str], rows: Iterable[Sequence[object]]) -> str:
     for row in rows:
         baris.append("| " + " | ".join(str(sel) for sel in row) + " |")
     return "\n".join(baris)
+
+
+def _bungkus(
+    teks: str, awalan: str = "", indentasi: str = "", lebar: int = 80
+) -> list[str]:
+    """Bungkus satu paragraf/bulir agar tiap baris tidak melebihi lebar kolom."""
+    potong = textwrap.wrap(
+        teks,
+        width=max(20, lebar - len(awalan)),
+        break_long_words=False,
+        break_on_hyphens=False,
+    ) or [""]
+    hasil = [awalan + potong[0]]
+    hasil += [indentasi + bagian for bagian in potong[1:]]
+    return hasil
 
 
 def _akurasi(baris: Sequence[dict[str, Any]], kunci: str) -> float:
@@ -146,11 +162,17 @@ def _rinci_skenario() -> list[str]:
         bagian.append("")
         for urutan, item in enumerate(hasil["kandidat"][:3], start=1):
             rinci = hitung_rinci(skenario["gejala"], item["kasus"]["gejala"], "jaccard")
-            bagian.append(
-                f"- **Top-{urutan} {item['kasus']['id']}**: "
-                f"A ∩ B = {{{', '.join(rinci['irisan'])}}} ({rinci['jumlah_irisan']} anggota), "
-                f"A ∪ B = {{{', '.join(rinci['gabungan'])}}} ({rinci['jumlah_gabungan']} anggota) "
-                f"→ {rinci['pembilang']} / {rinci['penyebut']} = **{rinci['hasil']:.4f}**"
+            bagian.extend(
+                _bungkus(
+                    f"**Top-{urutan} {item['kasus']['id']}**: "
+                    f"A ∩ B = {{{', '.join(rinci['irisan'])}}} "
+                    f"({rinci['jumlah_irisan']} anggota), "
+                    f"A ∪ B = {{{', '.join(rinci['gabungan'])}}} "
+                    f"({rinci['jumlah_gabungan']} anggota) → "
+                    f"{rinci['pembilang']} / {rinci['penyebut']} = **{rinci['hasil']:.4f}**",
+                    "- ",
+                    "  ",
+                )
             )
         bagian.append("")
     return bagian
@@ -163,8 +185,10 @@ def _susun_dokumen(
         "# Hasil Evaluasi",
         "",
         f"Dibuat otomatis oleh `python -m evaluasi.jalankan_evaluasi` pada {date.today().isoformat()}.",
-        "Sumber data: `CASE_BASE_AWAL` (15 kasus), bukan `data/case_base.json`, agar kasus hasil",
-        "retain tidak memengaruhi hasil.",
+        *_bungkus(
+            "Sumber data: `CASE_BASE_AWAL` (15 kasus), bukan `data/case_base.json`, "
+            "agar kasus hasil retain tidak memengaruhi hasil."
+        ),
         "",
         "## Ringkasan",
         "",
@@ -184,26 +208,40 @@ def _susun_dokumen(
         "",
     ]
     for item in ringkasan:
-        baris.extend([f"### {item['label']}", "", _bagian_leave_one_out(item["loo"]), ""])
+        baris.extend(
+            [f"### {item['label']} — leave-one-out", "", _bagian_leave_one_out(item["loo"]), ""]
+        )
 
     baris.extend(["## 2. Lima skenario baru", ""])
     for item in ringkasan:
-        baris.extend([f"### {item['label']}", "", _bagian_skenario(item["skenario"]), ""])
+        baris.extend(
+            [f"### {item['label']} — 5 skenario baru", "", _bagian_skenario(item["skenario"]), ""]
+        )
 
     baris.extend(["## 3. Kasus yang salah", ""])
     salah = []
     for item in ringkasan:
         for hasil in item["loo"]:
             if not hasil["benar_top1"]:
-                salah.append(
-                    f"- {item['label']} — kasus uji {hasil['kasus_uji']} ({hasil['kategori']}): "
-                    f"top-1 {hasil['top1']} ({hasil['kategori_top1']}, skor {hasil['skor']:.4f})"
+                salah.extend(
+                    _bungkus(
+                        f"{item['label']} — kasus uji {hasil['kasus_uji']} "
+                        f"({hasil['kategori']}): top-1 {hasil['top1']} "
+                        f"({hasil['kategori_top1']}, skor {hasil['skor']:.4f})",
+                        "- ",
+                        "  ",
+                    )
                 )
         for hasil in item["skenario"]:
             if not hasil["benar_top1"]:
-                salah.append(
-                    f"- {item['label']} — skenario {hasil['skenario']} ({hasil['kategori']}): "
-                    f"top-1 {hasil['top1']} ({hasil['kategori_top1']}, skor {hasil['skor']:.4f})"
+                salah.extend(
+                    _bungkus(
+                        f"{item['label']} — skenario {hasil['skenario']} "
+                        f"({hasil['kategori']}): top-1 {hasil['top1']} "
+                        f"({hasil['kategori_top1']}, skor {hasil['skor']:.4f})",
+                        "- ",
+                        "  ",
+                    )
                 )
     baris.extend(salah or ["Tidak ada kasus top-1 yang salah pada pengujian ini."])
     baris.extend(["", "## 4. Perhitungan rinci skenario (Jaccard)", ""])
@@ -212,16 +250,34 @@ def _susun_dokumen(
         [
             "## 5. Catatan",
             "",
-            "- Leave-one-out menguji apakah kasus yang dikeluarkan kembali dikenali kategorinya",
-            "  dari 14 kasus lain. Cara ini mengukur konsistensi case base, bukan performa pada",
-            "  keluhan nyata.",
-            "- Lima skenario dibuat dari pola gejala yang mirip dengan kasus awal, sehingga akurasi",
-            "  yang tinggi belum tentu berlaku untuk keluhan yang sangat berbeda.",
-            "- Weighted Jaccard dapat mengubah urutan kandidat karena gejala lampu abnormal berbobot",
-            "  2.0 dan gejala kondisi normal berbobot 0.5.",
-            "- Perhitungan rinci di bagian 4 memakai fungsi `core.similarity.hitung_rinci` yang sama",
-            "  dengan yang ditampilkan aplikasi, sehingga bisa dicocokkan dengan hitungan tangan",
-            "  di `docs/validasi_manual.md`.",
+            *_bungkus(
+                "Leave-one-out menguji apakah kasus yang dikeluarkan kembali dikenali "
+                "kategorinya dari 14 kasus lain. Cara ini mengukur konsistensi case base, "
+                "bukan performa pada keluhan nyata.",
+                "- ",
+                "  ",
+            ),
+            *_bungkus(
+                "Lima skenario dibuat dari pola gejala yang mirip dengan kasus awal, "
+                "sehingga akurasi yang tinggi belum tentu berlaku untuk keluhan yang sangat "
+                "berbeda.",
+                "- ",
+                "  ",
+            ),
+            *_bungkus(
+                "Weighted Jaccard dapat mengubah urutan kandidat karena gejala lampu abnormal "
+                "berbobot 2.0 dan gejala kondisi normal berbobot 0.5.",
+                "- ",
+                "  ",
+            ),
+            *_bungkus(
+                "Perhitungan rinci di bagian 4 memakai fungsi "
+                "`core.similarity.hitung_rinci` yang sama dengan yang ditampilkan aplikasi, "
+                "sehingga bisa dicocokkan dengan hitungan tangan di "
+                "`docs/validasi_manual.md`.",
+                "- ",
+                "  ",
+            ),
             "",
         ]
     )

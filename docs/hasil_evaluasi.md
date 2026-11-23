@@ -1,8 +1,8 @@
 # Hasil Evaluasi
 
-Dibuat otomatis oleh `python -m evaluasi.jalankan_evaluasi` pada 2026-11-21.
-Sumber data: `CASE_BASE_AWAL` (15 kasus), bukan `data/case_base.json`, agar kasus hasil
-retain tidak memengaruhi hasil.
+Dibuat otomatis oleh `python -m evaluasi.jalankan_evaluasi` pada 2026-11-24.
+Sumber data: `CASE_BASE_AWAL` (15 kasus), bukan `data/case_base.json`, agar
+kasus hasil retain tidak memengaruhi hasil.
 
 ## Ringkasan
 
@@ -15,7 +15,7 @@ retain tidak memengaruhi hasil.
 
 ## 1. Leave-one-out (15 kasus)
 
-### Jaccard
+### Jaccard — leave-one-out
 
 | Kasus uji | Kategori sebenarnya | Top-1 | Skor top-1 | Kategori top-1 | Top-1 benar | Top-3 benar |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -35,7 +35,7 @@ retain tidak memengaruhi hasil.
 | K14 | sinyal_lemah_interferensi | K15 | 0.4286 | sinyal_lemah_interferensi | ya | ya |
 | K15 | sinyal_lemah_interferensi | K13 | 0.5714 | masalah_perangkat_klien | tidak | ya |
 
-### Weighted Jaccard
+### Weighted Jaccard — leave-one-out
 
 | Kasus uji | Kategori sebenarnya | Top-1 | Skor top-1 | Kategori top-1 | Top-1 benar | Top-3 benar |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -57,7 +57,7 @@ retain tidak memengaruhi hasil.
 
 ## 2. Lima skenario baru
 
-### Jaccard
+### Jaccard — 5 skenario baru
 
 | Skenario | Deskripsi | Kategori harapan | Top-1 | Skor | Kategori top-1 | Top-1 benar | Top-3 benar |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -67,7 +67,7 @@ retain tidak memengaruhi hasil.
 | S4 | Nama WiFi hilang karena lampu WLAN mati | wlan_nonaktif | K08 | 0.8000 | wlan_nonaktif | ya | ya |
 | S5 | Password WiFi ditolak di semua perangkat setelah diganti | password_salah | K10 | 0.6667 | password_salah | ya | ya |
 
-### Weighted Jaccard
+### Weighted Jaccard — 5 skenario baru
 
 | Skenario | Deskripsi | Kategori harapan | Top-1 | Skor | Kategori top-1 | Top-1 benar | Top-3 benar |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -79,55 +79,101 @@ retain tidak memengaruhi hasil.
 
 ## 3. Kasus yang salah
 
-- Jaccard — kasus uji K01 (kabel_optik_bermasalah): top-1 K04 (router_mati_daya, skor 0.4286)
-- Jaccard — kasus uji K07 (gangguan_isp): top-1 K03 (kabel_optik_bermasalah, skor 0.4286)
-- Jaccard — kasus uji K13 (masalah_perangkat_klien): top-1 K15 (sinyal_lemah_interferensi, skor 0.5714)
-- Jaccard — kasus uji K15 (sinyal_lemah_interferensi): top-1 K13 (masalah_perangkat_klien, skor 0.5714)
-- Weighted Jaccard — kasus uji K07 (gangguan_isp): top-1 K13 (masalah_perangkat_klien, skor 0.4167)
-- Weighted Jaccard — kasus uji K13 (masalah_perangkat_klien): top-1 K15 (sinyal_lemah_interferensi, skor 0.5833)
-- Weighted Jaccard — kasus uji K15 (sinyal_lemah_interferensi): top-1 K13 (masalah_perangkat_klien, skor 0.5833)
+- Jaccard — kasus uji K01 (kabel_optik_bermasalah): top-1 K04 (router_mati_daya,
+  skor 0.4286)
+- Jaccard — kasus uji K07 (gangguan_isp): top-1 K03 (kabel_optik_bermasalah,
+  skor 0.4286)
+- Jaccard — kasus uji K13 (masalah_perangkat_klien): top-1 K15
+  (sinyal_lemah_interferensi, skor 0.5714)
+- Jaccard — kasus uji K15 (sinyal_lemah_interferensi): top-1 K13
+  (masalah_perangkat_klien, skor 0.5714)
+- Weighted Jaccard — kasus uji K07 (gangguan_isp): top-1 K13
+  (masalah_perangkat_klien, skor 0.4167)
+- Weighted Jaccard — kasus uji K13 (masalah_perangkat_klien): top-1 K15
+  (sinyal_lemah_interferensi, skor 0.5833)
+- Weighted Jaccard — kasus uji K15 (sinyal_lemah_interferensi): top-1 K13
+  (masalah_perangkat_klien, skor 0.5833)
 
 ## 4. Perhitungan rinci skenario (Jaccard)
 
 ### S1 — Kabel fiber terganggu, semua perangkat tidak bisa internet
 
-- **Top-1 K01**: A ∩ B = {los_merah, pon_mati, semua_perangkat, tidak_connect} (4 anggota), A ∪ B = {internet_mati, internet_mati_total, los_merah, pon_mati, semua_perangkat, tidak_connect} (6 anggota) → 4 / 6 = **0.6667**
-- **Top-2 K02**: A ∩ B = {los_merah, semua_perangkat, tidak_connect} (3 anggota), A ∪ B = {internet_lambat, internet_mati_total, los_merah, pon_mati, pon_nyala, putus_nyambung, semua_perangkat, tidak_connect} (8 anggota) → 3 / 8 = **0.3750**
-- **Top-3 K05**: A ∩ B = {semua_perangkat, tidak_connect} (2 anggota), A ∪ B = {internet_mati_total, los_merah, pon_mati, router_tidak_punya_indikator, semua_perangkat, tidak_connect, wifi_tidak_muncul} (7 anggota) → 2 / 7 = **0.2857**
+- **Top-1 K01**: A ∩ B = {los_merah, pon_mati, semua_perangkat, tidak_connect}
+  (4 anggota), A ∪ B = {internet_mati, internet_mati_total, los_merah, pon_mati,
+  semua_perangkat, tidak_connect} (6 anggota) → 4 / 6 = **0.6667**
+- **Top-2 K02**: A ∩ B = {los_merah, semua_perangkat, tidak_connect} (3
+  anggota), A ∪ B = {internet_lambat, internet_mati_total, los_merah, pon_mati,
+  pon_nyala, putus_nyambung, semua_perangkat, tidak_connect} (8 anggota) → 3 / 8
+  = **0.3750**
+- **Top-3 K05**: A ∩ B = {semua_perangkat, tidak_connect} (2 anggota), A ∪ B =
+  {internet_mati_total, los_merah, pon_mati, router_tidak_punya_indikator,
+  semua_perangkat, tidak_connect, wifi_tidak_muncul} (7 anggota) → 2 / 7 =
+  **0.2857**
 
 ### S2 — Router tidak menyala setelah listrik padam
 
-- **Top-1 K04**: A ∩ B = {power_mati, semua_perangkat, tidak_connect, wifi_tidak_muncul} (4 anggota), A ∪ B = {internet_mati, power_mati, semua_perangkat, tidak_connect, wifi_tidak_muncul} (5 anggota) → 4 / 5 = **0.8000**
-- **Top-2 K05**: A ∩ B = {semua_perangkat, tidak_connect, wifi_tidak_muncul} (3 anggota), A ∪ B = {power_mati, router_tidak_punya_indikator, semua_perangkat, tidak_connect, wifi_tidak_muncul} (5 anggota) → 3 / 5 = **0.6000**
-- **Top-3 K01**: A ∩ B = {semua_perangkat, tidak_connect} (2 anggota), A ∪ B = {internet_mati, los_merah, pon_mati, power_mati, semua_perangkat, tidak_connect, wifi_tidak_muncul} (7 anggota) → 2 / 7 = **0.2857**
+- **Top-1 K04**: A ∩ B = {power_mati, semua_perangkat, tidak_connect,
+  wifi_tidak_muncul} (4 anggota), A ∪ B = {internet_mati, power_mati,
+  semua_perangkat, tidak_connect, wifi_tidak_muncul} (5 anggota) → 4 / 5 =
+  **0.8000**
+- **Top-2 K05**: A ∩ B = {semua_perangkat, tidak_connect, wifi_tidak_muncul} (3
+  anggota), A ∪ B = {power_mati, router_tidak_punya_indikator, semua_perangkat,
+  tidak_connect, wifi_tidak_muncul} (5 anggota) → 3 / 5 = **0.6000**
+- **Top-3 K01**: A ∩ B = {semua_perangkat, tidak_connect} (2 anggota), A ∪ B =
+  {internet_mati, los_merah, pon_mati, power_mati, semua_perangkat,
+  tidak_connect, wifi_tidak_muncul} (7 anggota) → 2 / 7 = **0.2857**
 
 ### S3 — Lampu PON normal tetapi tidak ada akses internet sama sekali
 
-- **Top-1 K06**: A ∩ B = {connect_tapi_tanpa_internet, internet_mati, internet_mati_total, pon_nyala, semua_perangkat} (5 anggota), A ∪ B = {connect_tapi_tanpa_internet, internet_mati, internet_mati_total, los_mati, pon_nyala, semua_perangkat} (6 anggota) → 5 / 6 = **0.8333**
-- **Top-2 K07**: A ∩ B = {connect_tapi_tanpa_internet, pon_nyala, semua_perangkat} (3 anggota), A ∪ B = {connect_tapi_tanpa_internet, internet_lambat, internet_mati, internet_mati_total, internet_nyala, pon_nyala, semua_perangkat} (7 anggota) → 3 / 7 = **0.4286**
-- **Top-3 K01**: A ∩ B = {internet_mati, semua_perangkat} (2 anggota), A ∪ B = {connect_tapi_tanpa_internet, internet_mati, internet_mati_total, los_merah, pon_mati, pon_nyala, semua_perangkat, tidak_connect} (8 anggota) → 2 / 8 = **0.2500**
+- **Top-1 K06**: A ∩ B = {connect_tapi_tanpa_internet, internet_mati,
+  internet_mati_total, pon_nyala, semua_perangkat} (5 anggota), A ∪ B =
+  {connect_tapi_tanpa_internet, internet_mati, internet_mati_total, los_mati,
+  pon_nyala, semua_perangkat} (6 anggota) → 5 / 6 = **0.8333**
+- **Top-2 K07**: A ∩ B = {connect_tapi_tanpa_internet, pon_nyala,
+  semua_perangkat} (3 anggota), A ∪ B = {connect_tapi_tanpa_internet,
+  internet_lambat, internet_mati, internet_mati_total, internet_nyala,
+  pon_nyala, semua_perangkat} (7 anggota) → 3 / 7 = **0.4286**
+- **Top-3 K01**: A ∩ B = {internet_mati, semua_perangkat} (2 anggota), A ∪ B =
+  {connect_tapi_tanpa_internet, internet_mati, internet_mati_total, los_merah,
+  pon_mati, pon_nyala, semua_perangkat, tidak_connect} (8 anggota) → 2 / 8 =
+  **0.2500**
 
 ### S4 — Nama WiFi hilang karena lampu WLAN mati
 
-- **Top-1 K08**: A ∩ B = {power_nyala, semua_perangkat, wifi_tidak_muncul, wlan_mati} (4 anggota), A ∪ B = {internet_nyala, power_nyala, semua_perangkat, wifi_tidak_muncul, wlan_mati} (5 anggota) → 4 / 5 = **0.8000**
-- **Top-2 K09**: A ∩ B = {power_nyala, semua_perangkat, wlan_mati} (3 anggota), A ∪ B = {internet_nyala, pon_nyala, power_nyala, semua_perangkat, tidak_connect, wifi_tidak_muncul, wlan_mati} (7 anggota) → 3 / 7 = **0.4286**
-- **Top-3 K05**: A ∩ B = {semua_perangkat, wifi_tidak_muncul} (2 anggota), A ∪ B = {power_nyala, router_tidak_punya_indikator, semua_perangkat, tidak_connect, wifi_tidak_muncul, wlan_mati} (6 anggota) → 2 / 6 = **0.3333**
+- **Top-1 K08**: A ∩ B = {power_nyala, semua_perangkat, wifi_tidak_muncul,
+  wlan_mati} (4 anggota), A ∪ B = {internet_nyala, power_nyala, semua_perangkat,
+  wifi_tidak_muncul, wlan_mati} (5 anggota) → 4 / 5 = **0.8000**
+- **Top-2 K09**: A ∩ B = {power_nyala, semua_perangkat, wlan_mati} (3 anggota),
+  A ∪ B = {internet_nyala, pon_nyala, power_nyala, semua_perangkat,
+  tidak_connect, wifi_tidak_muncul, wlan_mati} (7 anggota) → 3 / 7 = **0.4286**
+- **Top-3 K05**: A ∩ B = {semua_perangkat, wifi_tidak_muncul} (2 anggota), A ∪ B
+  = {power_nyala, router_tidak_punya_indikator, semua_perangkat, tidak_connect,
+  wifi_tidak_muncul, wlan_mati} (6 anggota) → 2 / 6 = **0.3333**
 
 ### S5 — Password WiFi ditolak di semua perangkat setelah diganti
 
-- **Top-1 K10**: A ∩ B = {password_ditolak, power_nyala, tidak_connect, wlan_nyala} (4 anggota), A ∪ B = {hanya_1_perangkat, password_ditolak, power_nyala, semua_perangkat, tidak_connect, wlan_nyala} (6 anggota) → 4 / 6 = **0.6667**
-- **Top-2 K11**: A ∩ B = {password_ditolak, semua_perangkat, tidak_connect, wlan_nyala} (4 anggota), A ∪ B = {internet_nyala, password_ditolak, power_nyala, semua_perangkat, tidak_connect, wlan_nyala} (6 anggota) → 4 / 6 = **0.6667**
-- **Top-3 K09**: A ∩ B = {power_nyala, semua_perangkat, tidak_connect} (3 anggota), A ∪ B = {internet_nyala, password_ditolak, pon_nyala, power_nyala, semua_perangkat, tidak_connect, wlan_mati, wlan_nyala} (8 anggota) → 3 / 8 = **0.3750**
+- **Top-1 K10**: A ∩ B = {password_ditolak, power_nyala, tidak_connect,
+  wlan_nyala} (4 anggota), A ∪ B = {hanya_1_perangkat, password_ditolak,
+  power_nyala, semua_perangkat, tidak_connect, wlan_nyala} (6 anggota) → 4 / 6 =
+  **0.6667**
+- **Top-2 K11**: A ∩ B = {password_ditolak, semua_perangkat, tidak_connect,
+  wlan_nyala} (4 anggota), A ∪ B = {internet_nyala, password_ditolak,
+  power_nyala, semua_perangkat, tidak_connect, wlan_nyala} (6 anggota) → 4 / 6 =
+  **0.6667**
+- **Top-3 K09**: A ∩ B = {power_nyala, semua_perangkat, tidak_connect} (3
+  anggota), A ∪ B = {internet_nyala, password_ditolak, pon_nyala, power_nyala,
+  semua_perangkat, tidak_connect, wlan_mati, wlan_nyala} (8 anggota) → 3 / 8 =
+  **0.3750**
 
 ## 5. Catatan
 
-- Leave-one-out menguji apakah kasus yang dikeluarkan kembali dikenali kategorinya
-  dari 14 kasus lain. Cara ini mengukur konsistensi case base, bukan performa pada
-  keluhan nyata.
-- Lima skenario dibuat dari pola gejala yang mirip dengan kasus awal, sehingga akurasi
-  yang tinggi belum tentu berlaku untuk keluhan yang sangat berbeda.
-- Weighted Jaccard dapat mengubah urutan kandidat karena gejala lampu abnormal berbobot
-  2.0 dan gejala kondisi normal berbobot 0.5.
-- Perhitungan rinci di bagian 4 memakai fungsi `core.similarity.hitung_rinci` yang sama
-  dengan yang ditampilkan aplikasi, sehingga bisa dicocokkan dengan hitungan tangan
-  di `docs/validasi_manual.md`.
+- Leave-one-out menguji apakah kasus yang dikeluarkan kembali dikenali
+  kategorinya dari 14 kasus lain. Cara ini mengukur konsistensi case base, bukan
+  performa pada keluhan nyata.
+- Lima skenario dibuat dari pola gejala yang mirip dengan kasus awal, sehingga
+  akurasi yang tinggi belum tentu berlaku untuk keluhan yang sangat berbeda.
+- Weighted Jaccard dapat mengubah urutan kandidat karena gejala lampu abnormal
+  berbobot 2.0 dan gejala kondisi normal berbobot 0.5.
+- Perhitungan rinci di bagian 4 memakai fungsi `core.similarity.hitung_rinci`
+  yang sama dengan yang ditampilkan aplikasi, sehingga bisa dicocokkan dengan
+  hitungan tangan di `docs/validasi_manual.md`.
