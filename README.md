@@ -77,6 +77,9 @@ Pengujian dilakukan dengan menghitung similarity **dengan tangan** lalu mencocok
 output aplikasi. Aplikasi menyediakan expander "Lihat perhitungan rinci" yang menampilkan
 himpunan gejala, irisan, gabungan, dan rumus dengan angka terisi. Tiga contoh perhitungan
 lengkap ada di [`docs/validasi_manual.md`](docs/validasi_manual.md) dan dipakai sebagai uji pytest.
+Langkah praktis untuk tim saat demo/sidang (pembagian peran, urutan menulis di papan,
+skenario yang sudah terverifikasi, lembar contekan 25 gejala dan 15 kasus) ada di
+[`docs/panduan_pengujian_manual.md`](docs/panduan_pengujian_manual.md).
 
 ## Hasil Evaluasi
 
